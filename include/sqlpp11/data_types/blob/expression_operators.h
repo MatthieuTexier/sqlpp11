@@ -33,11 +33,15 @@
 #include <sqlpp11/type_traits.h>
 #include <sqlpp11/data_types/blob/data_type.h>
 #include <sqlpp11/data_types/text/return_type_like.h>
+#include <sqlpp11/data_types/text/return_type_similar.h>
 
 namespace sqlpp
 {
   template <typename Operand, typename Pattern>
   struct like_t;
+  
+  template <typename Operand, typename Pattern>
+  struct similar_t;
 
   template <typename L, typename R>
   struct return_type_like<L, R, binary_operand_check_t<L, is_blob_t, R, is_blob_t>>
@@ -45,7 +49,7 @@ namespace sqlpp
     using check = consistent_t;
     using type = like_t<wrap_operand_t<L>, wrap_operand_t<R>>;
   };
-
+  
   template <typename L, typename R>
   struct return_type_like<L, R, binary_operand_check_t<L, is_blob_t, R, is_text_t>>
   {
@@ -53,6 +57,20 @@ namespace sqlpp
     using type = like_t<wrap_operand_t<L>, wrap_operand_t<R>>;
   };
 
+  template <typename L, typename R>
+  struct return_type_similar<L, R, binary_operand_check_t<L, is_blob_t, R, is_blob_t>>
+  {
+    using check = consistent_t;
+    using type = similar_t<wrap_operand_t<L>, wrap_operand_t<R>>;
+  };
+  
+  template <typename L, typename R>
+  struct return_type_similar<L, R, binary_operand_check_t<L, is_blob_t, R, is_text_t>>
+  {
+    using check = consistent_t;
+    using type = similar_t<wrap_operand_t<L>, wrap_operand_t<R>>;
+  };
+  
   template <typename Expression>
   struct expression_operators<Expression, blob> : public basic_expression_operators<Expression>
   {
@@ -63,6 +81,13 @@ namespace sqlpp
     auto like(const R& r) const -> return_type_like_t<Expression, R>
     {
       typename return_type_like<Expression, R>::check{};
+      return {*static_cast<const Expression*>(this), wrap_operand_t<R>{r}};
+    }
+
+    template <typename R>
+    auto similar(const R& r) const -> return_type_similar_t<Expression, R>
+    {
+      typename return_type_similar<Expression, R>::check{};
       return {*static_cast<const Expression*>(this), wrap_operand_t<R>{r}};
     }
   };
