@@ -37,6 +37,7 @@
 
 // blob specific functions
 #include <sqlpp11/data_types/text/like.h>
+#include <sqlpp11/data_types/text/similar.h>
 #include <sqlpp11/data_types/text/concat.h>
 
 #endif
