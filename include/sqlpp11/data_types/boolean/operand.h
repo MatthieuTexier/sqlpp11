@@ -31,7 +31,6 @@
 
 #include <sqlpp11/type_traits.h>
 #include <sqlpp11/alias_operators.h>
-#include <sqlpp11/serializer.h>
 
 namespace sqlpp
 {
@@ -41,7 +40,7 @@ namespace sqlpp
   {
     using _traits = make_traits<boolean, tag::is_expression, tag::is_wrapped_value>;
     using _nodes = detail::type_vector<>;
-    using _is_aggregate_expression = std::true_type;
+    using _is_literal_expression = std::true_type;
 
     using _value_t = bool;
 
@@ -59,26 +58,15 @@ namespace sqlpp
     boolean_operand& operator=(boolean_operand&&) = default;
     ~boolean_operand() = default;
 
-    bool _is_trivial() const
-    {
-      return not _t;
-    }
-
     _value_t _t;
   };
 
   template <typename Context>
-  struct serializer_t<Context, boolean_operand>
+  Context& serialize(const boolean_operand& t, Context& context)
   {
-    using _serialize_check = consistent_t;
-    using Operand = boolean_operand;
-
-    static Context& _(const Operand& t, Context& context)
-    {
-      context << t._t;
-      return context;
-    }
-  };
+    context << t._t;
+    return context;
+  }
 }  // namespace sqlpp
 
 #endif

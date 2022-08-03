@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, Roland Bock
+ * Copyright (c) 2013-2020, Roland Bock, MacDue
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
@@ -56,6 +56,7 @@ namespace sqlpp
 
   template <typename Flag, typename Expr>
   struct sum_t : public expression_operators<sum_t<Flag, Expr>, value_type_of<Expr>>,
+                 public aggregate_function_operators<sum_t<Flag, Expr>>,
                  public alias_operators<sum_t<Flag, Expr>>
   {
     using _traits = make_traits<value_type_of<Expr>, tag::is_expression, tag::is_selectable>;
@@ -83,29 +84,22 @@ namespace sqlpp
   };
 
   template <typename Context, typename Flag, typename Expr>
-  struct serializer_t<Context, sum_t<Flag, Expr>>
+  Context& serialize(const sum_t<Flag, Expr>& t, Context& context)
   {
-    using _serialize_check = serialize_check_of<Context, Flag, Expr>;
-    using T = sum_t<Flag, Expr>;
-
-    static Context& _(const T& t, Context& context)
+    context << "SUM(";
+    if (std::is_same<distinct_t, Flag>::value)
     {
-      context << "SUM(";
-      if (std::is_same<distinct_t, Flag>::value)
-      {
-        serialize(Flag(), context);
-        context << ' ';
-        serialize_operand(t._expr, context);
-      }
-      else
-      {
-        serialize(t._expr, context);
-      }
-
-      context << ")";
-      return context;
+      serialize(Flag(), context);
+      context << ' ';
+      serialize_operand(t._expr, context);
     }
-  };
+    else
+    {
+      serialize(t._expr, context);
+    }
+    context << ")";
+    return context;
+  }
 
   template <typename T>
   auto sum(T t) -> sum_t<noop, wrap_operand_t<T>>

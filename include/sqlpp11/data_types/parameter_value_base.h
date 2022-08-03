@@ -28,7 +28,7 @@
 #define SQLPP11_DATA_TYPES_PARAMETER_VALUE_BASE_H
 
 #include <sqlpp11/data_types/parameter_value.h>
-#include <sqlpp11/tvin.h>
+#include <sqlpp11/value_or_null.h>
 
 namespace sqlpp
 {
@@ -54,19 +54,14 @@ namespace sqlpp
       return *this;
     }
 
-    parameter_value_base& operator=(const tvin_t<wrap_operand_t<_cpp_value_type>>& t)
+    parameter_value_base& operator=(const value_or_null_t<DataType>& val)
     {
-      if (t._is_trivial())
+      if (val._is_null)
       {
-        _value = {};
-        _is_null = true;
+        set_null();
+        return *this;
       }
-      else
-      {
-        _value = t._value._t;
-        _is_null = false;
-      }
-      return *this;
+      return operator=(val._value);
     }
 
     void set_null()

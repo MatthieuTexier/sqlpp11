@@ -31,7 +31,6 @@
 #include <sqlpp11/chrono.h>
 #include <sqlpp11/type_traits.h>
 #include <sqlpp11/alias_operators.h>
-#include <sqlpp11/serializer.h>
 
 namespace sqlpp
 {
@@ -41,7 +40,7 @@ namespace sqlpp
   {
     using _traits = make_traits<day_point, tag::is_expression, tag::is_wrapped_value>;
     using _nodes = detail::type_vector<>;
-    using _is_aggregate_expression = std::true_type;
+    using _is_literal_expression = std::true_type;
 
     using _value_t = ::sqlpp::chrono::day_point;
 
@@ -57,26 +56,15 @@ namespace sqlpp
     day_point_operand& operator=(day_point_operand&&) = default;
     ~day_point_operand() = default;
 
-    bool _is_trivial() const
-    {
-      return std::chrono::operator==(_t, _value_t{});
-    }
-
     _value_t _t;
   };
 
   template <typename Context>
-  struct serializer_t<Context, day_point_operand>
+  Context& serialize(const day_point_operand& t, Context& context)
   {
-    using _serialize_check = consistent_t;
-    using Operand = day_point_operand;
-
-    static Context& _(const Operand& t, Context& context)
-    {
-      const auto ymd = ::date::year_month_day{t._t};
-      context << "DATE '" << ymd << "'";
-      return context;
-    }
-  };
+    const auto ymd = ::date::year_month_day{t._t};
+    context << "DATE '" << ymd << "'";
+    return context;
+  }
 }  // namespace sqlpp
 #endif

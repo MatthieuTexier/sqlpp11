@@ -1,8 +1,14 @@
 sqlpp11
 =======
-A type safe embedded domain specific language for SQL queries and results in C++
+A type safe embedded domain specific language for SQL queries and results in C++.
 
-Documentation is found in the [wiki](https://github.com/rbock/sqlpp11/wiki)
+```diff
+!If you are a tenured user of sqlpp11, please note that
+!  - with 0.61 the connector libraries for mysql/sqlite/postgresql got merged into the main repo.
+!  - master has been renamed to main and is now the default branch
+```
+
+Documentation is found in [docs](docs/Home.md).
 
 So what is this about?
 ----------------------
@@ -20,9 +26,15 @@ This results in several benefits, e.g.
   * the compiler reports many kinds of errors long before the code enters unit testing or production,
   * the library hides the gory details of string construction for queries and interpreting results returned by select calls.
 
-The library supports both static and dynamic queries. The former offers greater benefit in terms of type and consistency checking. The latter makes it easier to construct queries on the flight.
+The library supports both static and dynamic queries. The former offers greater benefit in terms of type and consistency checking. The latter makes it easier to construct queries in flight.
 
-sqlpp11 is vendor-neutral. Specific traits of databases (e.g. unsupported or non-standard features) are handled by connector libraries. Connector libraries can inform the developer of missing features at compile time. They also interpret expressions specifically where needed. For example, the connector could use the operator|| or the concat method for string concatenation without the developer being required to change the statement.
+sqlpp11’s core is vendor-neutral.
+Specific traits of databases (e.g. unsupported or non-standard features) are handled by connector libraries.
+Connector libraries can inform the developer of missing features at compile time.
+They also interpret expressions specifically where needed.
+For example, the connector could use the operator|| or the concat method for string concatenation without the developer being required to change the statement.
+
+Connectors for MariaDB, MySQL, PostgreSQL, sqlite3, sqlcipher are included in this repository.
 
 The library is already used in production but it is certainly not complete yet. Feature requests, bug reports, contributions to code or documentation are most welcome.
 
@@ -88,10 +100,10 @@ sqlpp11 is distributed under the [BSD 2-Clause License](https://github.com/rbock
 
 Status:
 -------
-Branch / Compiler | clang-3.4,  gcc-4.9, Xcode-7   |  MSVC 2015/2017  | Test Coverage
-------------------| -------------------------------|-------------|---------------
-master | [![Build Status](https://travis-ci.org/rbock/sqlpp11.svg?branch=master)](https://travis-ci.org/rbock/sqlpp11?branch=master) | [![Build status](https://ci.appveyor.com/api/projects/status/eid7mwqgavo0h61h/branch/master?svg=true)](https://ci.appveyor.com/project/rbock/sqlpp11/branch/master) | [![Coverage Status](https://coveralls.io/repos/rbock/sqlpp11/badge.svg?branch=master)](https://coveralls.io/r/rbock/sqlpp11?branch=master)
-develop | [![Build Status](https://travis-ci.org/rbock/sqlpp11.svg?branch=develop)](https://travis-ci.org/rbock/sqlpp11?branch=develop) | [![Build status](https://ci.appveyor.com/api/projects/status/eid7mwqgavo0h61h/branch/develop?svg=true)](https://ci.appveyor.com/project/rbock/sqlpp11/branch/develop) | [![Coverage Status](https://coveralls.io/repos/rbock/sqlpp11/badge.svg?branch=develop)](https://coveralls.io/r/rbock/sqlpp11?branch=develop)
+Branch / Compiler | clang,  gcc |  MSVC  | Test Coverage
+------------------|-------------|--------|---------------
+master | [![Build Status](https://travis-ci.com/rbock/sqlpp11.svg?branch=master)](https://travis-ci.com/rbock/sqlpp11?branch=master) | [![Build status](https://ci.appveyor.com/api/projects/status/eid7mwqgavo0h61h/branch/master?svg=true)](https://ci.appveyor.com/project/rbock/sqlpp11/branch/master) | [![Coverage Status](https://coveralls.io/repos/rbock/sqlpp11/badge.svg?branch=master)](https://coveralls.io/r/rbock/sqlpp11?branch=master)
+develop | [![Build Status](https://travis-ci.com/rbock/sqlpp11.svg?branch=develop)](https://travis-ci.com/rbock/sqlpp11?branch=develop) | [![Build status](https://ci.appveyor.com/api/projects/status/eid7mwqgavo0h61h/branch/develop?svg=true)](https://ci.appveyor.com/project/rbock/sqlpp11/branch/develop) | [![Coverage Status](https://coveralls.io/repos/rbock/sqlpp11/badge.svg?branch=develop)](https://coveralls.io/r/rbock/sqlpp11?branch=develop)
 
 Additional information available:
 ---------------------------------
@@ -106,8 +118,6 @@ Past talks about sqlpp11 and some coding concepts used within the library:
    * 2014-12-05: [sqlpp11, An EDSL For Type-Safe SQL In C++11](https://www.youtube.com/watch?v=9Hjfg9IfzhU)
   * [MUC++:](http://www.meetup.com/MUCplusplus/)
    * 2014-02-27: [Selected C++11 Template Toffees From sqlpp11, Part1](https://www.youtube.com/watch?v=hXnGFYNbmXg), [Part2](https://www.youtube.com/watch?v=WPCV6dvxZ_U), [Part 3](https://www.youtube.com/watch?v=eB7hd_KjTig), [Part 4](https://www.youtube.com/watch?v=NBfqzcN0_EQ)
-
-
 
 
 Requirements:
@@ -125,37 +135,53 @@ sqlpp11 makes heavy use of C++11 and requires a recent compiler and STL. The fol
 __Database Connector:__
 sqlpp11 requires a certain api in order to connect with the database, see database/api.h.
 
-  * MySQL: https://github.com/rbock/sqlpp11-connector-mysql
-  * Sqlite3: https://github.com/rbock/sqlpp11-connector-sqlite3
-  * PostgreSQL: https://github.com/matthijs/sqlpp11-connector-postgresql
+This repository includes the following connectors:
+
+* MySQL
+* MariaDB
+* SQLite3
+* SQLCipher
+* PostgreSQL
+
+Other connectors can be found here:
+
   * ODBC: https://github.com/Erroneous1/sqlpp11-connector-odbc (experimental)
 
-To demonstrate that sqlpp11 can work with other backends as well, here is an experimental backend for structs in standard containers:
-
-  * STL Container: https://github.com/rbock/sqlpp11-connector-stl
-
 __Date Library:__
-sqlpp11 requires [Howard Hinnant's date library](https://github.com/HowardHinnant/date) for `date` and `date_time` data types. Sqlpp11 includes CMake search module for this, but if you didn't install this library system-wide, you need to point cmake to it:
-
-```
-cmake -DHinnantDate_ROOT_DIR=/%PATH_TO_HinnantDate_SOURCE%/
-```
+sqlpp11 requires [Howard Hinnant’s date library](https://github.com/HowardHinnant/date) for `date` and `date_time` data types. By default, sqlpp11 uses FetchContent to pull the library automatically in the project. If you want to use an already installed version of the library with `find_package`, set `USE_SYSTEM_DATE` option to `ON`.
 
 Build and Install
 -----------------
+
+**Note**: Depending on how you use the lib, you might not need to install it (see Basic Usage)
+
 __Build from Source:__
 
 Download and unpack the latest release from https://github.com/rbock/sqlpp11/releases or clone the repository. Inside the directory run the following commands:
 
 ```bash
-mkdir build
-cd build
-cmake ..
-make
-make install
+cmake -B build
+cmake --build build --target install
 ```
 
-The last step will install the library system wide.
+The last step will build the library and install it system wide, therefore it might need admins rights.
+
+By default only the core library will be installed. To also install connectors set the appropriate variable to `ON`: 
+
+* `BUILD_MYSQL_CONNECTOR`
+* `BUILD_MARIADB_CONNECTOR`
+* `BUILD_POSTGRESQL_CONNECTOR`
+* `BUILD_SQLITE3_CONNECTOR`
+* `BUILD_SQLCIPHER_CONNECTOR`
+
+The library will check if all required dependencies are installed on the system. If connectors should be installed even if the dependencies are not yet available on the system, set `DEPENDENCY_CHECK` to `OFF`. 
+
+Example: Install the core library, sqlite3 connector and postgresql connector. Don’t check if the dependencies such as Sqlite3 are installed and don’t build any tests:
+
+```bash
+cmake -B build -DBUILD_POSTGRESQL_CONNECTOR=ON -DBUILD_SQLITE3_CONNECTOR=ON -DDEPENDENCY_CHECK=OFF -DBUILD_TESTING=OFF
+cmake --build build --target install
+```
 
 __Install via Homebrew (MacOS):__
 
@@ -165,9 +191,43 @@ brew install marvin182/zapfhahn/sqlpp11
 
 Some connectors can be installed with the formula. See `brew info marvin182/zapfhahn/sqlpp11` for available options.
 
+__Build via vcpkg:__
+
+You can download and install sqlpp11 using the [vcpkg](https://github.com/Microsoft/vcpkg) dependency manager:
+   
+```bash
+git clone https://github.com/Microsoft/vcpkg.git
+cd vcpkg
+./bootstrap-vcpkg.sh
+./vcpkg integrate install
+vcpkg install sqlpp11
+```
+    
+The sqlpp11 port in vcpkg is kept up to date by Microsoft team members and community contributors. If the version is out of date, please [create an issue or pull request](https://github.com/Microsoft/vcpkg) on the vcpkg repository.
+
+The following connector libraries for sqlpp11 are maintained as a separate package in vcpkg:
+
+  * [sqlpp11-connector-sqlite3](https://github.com/microsoft/vcpkg/tree/master/ports/sqlpp11-connector-sqlite3) 
+  * [sqlpp11-connector-mysql](https://github.com/microsoft/vcpkg/tree/master/ports/sqlpp11-connector-mysql)
 
 Basic usage:
 -------------
+__Use with cmake__:
+The library officially supports two ways how it can be used with cmake. 
+You can find examples for both methods in the examples folder. 
+
+1. FetchContent (Recommended, no installation required)
+1. FindPackage (installation required, see above)
+
+Both methods will provide the `sqlpp11::sqlpp11` target as well as targets for each connector: 
+
+* sqlpp11::mysql
+* sqlpp11::mariadb
+* sqlpp11::sqlite3
+* sqlpp11::sqlcipher
+* sqlpp11::postgresql
+
+These targets will make sure all required dependencies are available and correctly linked and include directories are set correctly.
 
 __Create DDL files__:
 ``` 
@@ -179,9 +239,9 @@ Create headers for them with provided Python script:
 ```
 %sqlpp11_dir%/scripts/ddl2cpp ~/temp/MyTable.ddl  ~/temp/MyTable %DatabaseNamespaceForExample%
 ```
-(In case you're getting notes about unsupported column type take a look at the other datatypes in sqlpp11/data_types. They are not hard to implement.)
+(In case you’re getting notes about unsupported column type take a look at the other datatypes in sqlpp11/data_types. They are not hard to implement.)
 
-Include generated header (MyTable.h), that's all.
+Include generated header (MyTable.h), that’s all.
 
 If you prefer Ruby over Python, you might want to take a look at https://github.com/douyw/sqlpp11gen
 
@@ -190,9 +250,4 @@ Contact:
   * Issues at https://github.com/rbock/sqlpp11/issues
   * email at rbock at eudoxos dot de
   * [![Join the chat at https://gitter.im/sqlpp11/Lobby](https://badges.gitter.im/sqlpp11/Lobby.svg)](https://gitter.im/sqlpp11/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
-Breaking changes in 0.36:
--------------------------
-See [Changes](ChangeLog.md)
-
 

@@ -98,7 +98,17 @@ namespace sqlpp
     struct minus
     {
       using _traits = make_traits<ValueType>;
-      static constexpr const char* _name = "-";
+      // The trailing space is necessary to prevent
+      // ```
+      // t.id - -1
+      // ```
+      // from turning into
+      // ```
+      // tab_sample.id--1
+      // ```
+      // (-- starts a comment in SQL)
+      // See https://github.com/rbock/sqlpp11/issues/294
+      static constexpr const char* _name = " - ";
     };
 
     template <typename ValueType>
@@ -146,6 +156,20 @@ namespace sqlpp
     {
       using _traits = make_traits<ValueType>;
       static constexpr const char* _name = "|";
+    };
+
+    template <typename ValueType>
+    struct shift_left
+    {
+      using _traits = make_traits<ValueType>;
+      static constexpr const char* _name = "<<";
+    };
+
+    template <typename ValueType>
+    struct shift_right
+    {
+      using _traits = make_traits<ValueType>;
+      static constexpr const char* _name = ">>";
     };
   }  // namespace op
 
@@ -208,6 +232,12 @@ namespace sqlpp
 
   template <typename Lhs, typename ValueType, typename Rhs>
   using bitwise_or_t = binary_expression_t<Lhs, op::bitwise_or<ValueType>, Rhs>;
+
+  template <typename Lhs, typename ValueType, typename Rhs>
+  using shift_left_t = binary_expression_t<Lhs, op::shift_left<ValueType>, Rhs>;
+
+  template <typename Lhs, typename ValueType, typename Rhs>
+  using shift_right_t = binary_expression_t<Lhs, op::shift_right<ValueType>, Rhs>;
 
   namespace detail
   {

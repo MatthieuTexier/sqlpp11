@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2016, Roland Bock
+ * Copyright (c) 2013-2020, Roland Bock, MacDue
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
@@ -56,6 +56,7 @@ namespace sqlpp
 
   template <typename Flag, typename Expr>
   struct avg_t : public expression_operators<avg_t<Flag, Expr>, floating_point>,
+                 public aggregate_function_operators<avg_t<Flag, Expr>>,
                  public alias_operators<avg_t<Flag, Expr>>
   {
     using _traits = make_traits<floating_point, tag::is_expression, tag::is_selectable>;
@@ -83,28 +84,22 @@ namespace sqlpp
   };
 
   template <typename Context, typename Flag, typename Expr>
-  struct serializer_t<Context, avg_t<Flag, Expr>>
+  Context& serialize(const avg_t<Flag, Expr>& t, Context& context)
   {
-    using _serialize_check = serialize_check_of<Context, Flag, Expr>;
-    using T = avg_t<Flag, Expr>;
-
-    static Context& _(const T& t, Context& context)
+    context << "AVG(";
+    if (std::is_same<distinct_t, Flag>::value)
     {
-      context << "AVG(";
-      if (std::is_same<distinct_t, Flag>::value)
-      {
-        serialize(Flag(), context);
-        context << ' ';
-        serialize_operand(t._expr, context);
-      }
-      else
-      {
-        serialize(t._expr, context);
-      }
-      context << ")";
-      return context;
+      serialize(Flag(), context);
+      context << ' ';
+      serialize_operand(t._expr, context);
     }
-  };
+    else
+    {
+      serialize(t._expr, context);
+    }
+    context << ")";
+    return context;
+  }
 
   template <typename T>
   auto avg(T t) -> avg_t<noop, wrap_operand_t<T>>

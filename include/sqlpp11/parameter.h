@@ -32,6 +32,7 @@
 #include <sqlpp11/data_types/parameter_value.h>
 #include <sqlpp11/expression_operators.h>
 #include <sqlpp11/detail/type_set.h>
+#include <sqlpp11/wrap_operand.h>
 
 namespace sqlpp
 {
@@ -43,6 +44,7 @@ namespace sqlpp
     using _nodes = detail::type_vector<>;
     using _parameters = detail::type_vector<parameter_t>;
     using _can_be_null = std::true_type;
+    using _is_literal_expression = std::true_type;
 
     using _instance_t = member_t<NameType, parameter_value_t<ValueType>>;
 
@@ -56,17 +58,11 @@ namespace sqlpp
   };
 
   template <typename Context, typename ValueType, typename NameType>
-  struct serializer_t<Context, parameter_t<ValueType, NameType>>
+  Context& serialize(const parameter_t<ValueType, NameType>&, Context& context)
   {
-    using _serialize_check = consistent_t;
-    using T = parameter_t<ValueType, NameType>;
-
-    static Context& _(const T& /*unused*/, Context& context)
-    {
-      context << "?";
-      return context;
-    }
-  };
+    context << "?";
+    return context;
+  }
 
   template <typename NamedExpr>
   auto parameter(const NamedExpr & /*unused*/) -> parameter_t<value_type_of<NamedExpr>, NamedExpr>

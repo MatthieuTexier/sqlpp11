@@ -59,7 +59,7 @@ namespace sqlpp
       assert_having_no_unknown_tables_t,
       "at least one having-expression requires a table which is otherwise not known in the statement");
 
-  SQLPP_PORTABLE_STATIC_ASSERT(assert_having_no_non_aggregates_t,
+  SQLPP_PORTABLE_STATIC_ASSERT(assert_having_all_aggregates_t,
                                "having expression not built out of aggregate expressions");
 
   // HAVING
@@ -91,10 +91,7 @@ namespace sqlpp
         static_assert(is_expression_t<Expr>::value, "invalid expression argument in having::add()");
         static_assert(Policies::template _no_unknown_tables<Expr>::value,
                       "expression uses tables unknown to this statement in having::add()");
-        using _serialize_check = sqlpp::serialize_check_t<typename Database::_serializer_context_t, Expr>;
-        _serialize_check{};
-
-        using ok = logic::all_t<_is_dynamic::value, is_expression_t<Expr>::value, _serialize_check::type::value>;
+        using ok = logic::all_t<_is_dynamic::value, is_expression_t<Expr>::value>;
 
         _add_impl(expression, ok());  // dispatch to prevent compile messages after the static_assert
       }
@@ -145,9 +142,9 @@ namespace sqlpp
                                                      consistent_t,
                                                      assert_having_no_unknown_tables_t>::type;
 
-      using _aggregate_check = typename std::conditional<Policies::template _no_non_aggregates<Expression>::value,
+      using _aggregate_check = typename std::conditional<Policies::template _all_aggregates<Expression>::value,
                                                          consistent_t,
-                                                         assert_having_no_non_aggregates_t>::type;
+                                                         assert_having_all_aggregates_t>::type;
 
       using _consistency_check = detail::get_first_if<is_inconsistent_t, consistent_t, _table_check, _aggregate_check>;
     };
@@ -292,23 +289,17 @@ namespace sqlpp
 
   // Interpreters
   template <typename Context, typename Database, typename Expression>
-  struct serializer_t<Context, having_data_t<Database, Expression>>
+  Context& serialize(const having_data_t<Database, Expression>& t, Context& context)
   {
-    using _serialize_check = serialize_check_of<Context, Expression>;
-    using T = having_data_t<Database, Expression>;
-
-    static Context& _(const T& t, Context& context)
+    context << " HAVING ";
+    serialize(t._expression, context);
+    if (not t._dynamic_expressions.empty())
     {
-      context << " HAVING ";
-      serialize(t._expression, context);
-      if (not t._dynamic_expressions.empty())
-      {
-        context << " AND ";
-      }
-      interpret_list(t._dynamic_expressions, " AND ", context);
-      return context;
+      context << " AND ";
     }
-  };
+    interpret_list(t._dynamic_expressions, " AND ", context);
+    return context;
+  }
 
   template <typename T>
   auto having(T&& t) -> decltype(statement_t<void, no_having_t>().having(std::forward<T>(t)))

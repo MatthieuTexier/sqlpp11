@@ -57,14 +57,12 @@ namespace sqlpp
   };
 
   template <typename Flag, typename Expr>
-  struct trim_t : public expression_operators<trim_t<Flag, Expr>, text>,
-                   public alias_operators<trim_t<Flag, Expr>>
+  struct trim_t : public expression_operators<trim_t<Flag, Expr>, text>, public alias_operators<trim_t<Flag, Expr>>
   {
     using _traits = make_traits<text, tag::is_expression, tag::is_selectable>;
 
-    using _nodes = detail::type_vector<Expr, aggregate_function>;
+    using _nodes = detail::type_vector<Expr>;
     using _can_be_null = can_be_null_t<Expr>;
-    using _is_aggregate_expression = std::false_type;
 
     using _auto_alias_t = trim_alias_t;
 
@@ -82,20 +80,13 @@ namespace sqlpp
   };
 
   template <typename Context, typename Flag, typename Expr>
-  struct serializer_t<Context, trim_t<Flag, Expr>>
+  Context& serialize(const trim_t<Flag, Expr>& t, Context& context)
   {
-    using _serialize_check = serialize_check_of<Context, Flag, Expr>;
-    using T = trim_t<Flag, Expr>;
-
-    static Context& _(const T& t, Context& context)
-    {
-      context << "TRIM(";
-      serialize(t._expr, context);
-      context << ")";
-      return context;
-    }
-
-  };
+    context << "TRIM(";
+    serialize(t._expr, context);
+    context << ")";
+    return context;
+  }
 
   template <typename T>
   auto trim(T t) -> trim_t<noop, wrap_operand_t<T>>

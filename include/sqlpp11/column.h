@@ -35,7 +35,6 @@
 #include <sqlpp11/type_traits.h>
 #include <sqlpp11/assignment.h>
 #include <sqlpp11/expression.h>
-#include <sqlpp11/serializer.h>
 #include <sqlpp11/wrong.h>
 #include <sqlpp11/detail/type_set.h>
 
@@ -62,6 +61,11 @@ namespace sqlpp
 
     template <typename T>
     using _is_valid_assignment_operand = is_valid_assignment_operand<value_type_of<ColumnSpec>, T>;
+
+    // disambiguation for C++20 / clang
+    // (see https://bugs.llvm.org/show_bug.cgi?id=46508)
+    using expression_operators<column_t<Table, ColumnSpec>, value_type_of<ColumnSpec>>::operator==;
+    using expression_operators<column_t<Table, ColumnSpec>, value_type_of<ColumnSpec>>::operator!=;
 
     column_t() = default;
     column_t(const column_t&) = default;
@@ -104,32 +108,15 @@ namespace sqlpp
     }
   };
 
-  // workaround for msvs bug https://connect.microsoft.com/VisualStudio/feedback/details/2173053
-  //  template <typename Context, typename... Args>
-  //  struct serializer_t<Context, column_t<Args...>>
-  //  {
-  //	  using _serialize_check = consistent_t;
-  //	  using T = column_t<Args...>;
-  //
-  //	  static Context& _(const T&, Context& context)
-  //	  {
-  //		  context << name_of<typename T::_table>::char_ptr() << '.' << name_of<T>::char_ptr();
-  //		  return context;
-  //	  }
-  //  };
-  template <typename Context, typename Args1, typename Args2>
-  struct serializer_t<Context, column_t<Args1, Args2>>
+  template <typename Context, typename Table, typename ColumnSpec>
+  Context& serialize(const column_t<Table, ColumnSpec>&, Context& context)
   {
-    using _serialize_check = consistent_t;
-    using T = column_t<Args1, Args2>;
+    using T = column_t<Table, ColumnSpec>;
 
-    static Context& _(const T& /*unused*/, Context& context)
-    {
-      context << name_of<typename T::_table>::template char_ptr<Context>() << '.'
-              << name_of<T>::template char_ptr<Context>();
-      return context;
-    }
-  };
+    context << name_of<typename T::_table>::template char_ptr<Context>() << '.'
+            << name_of<T>::template char_ptr<Context>();
+    return context;
+  }
 }  // namespace sqlpp
 
 #endif

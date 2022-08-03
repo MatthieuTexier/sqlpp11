@@ -93,10 +93,7 @@ namespace sqlpp
                       "expression uses tables unknown to this statement in where::add()");
         static_assert(not contains_aggregate_function_t<Expr>::value,
                       "where expression must not contain aggregate functions");
-        using _serialize_check = sqlpp::serialize_check_t<typename Database::_serializer_context_t, Expr>;
-        _serialize_check{};
-
-        using ok = logic::all_t<_is_dynamic::value, is_expression_t<Expr>::value, _serialize_check::type::value>;
+        using ok = logic::all_t<_is_dynamic::value, is_expression_t<Expr>::value>;
 
         _add_impl(expression, ok());  // dispatch to prevent compile messages after the static_assert
       }
@@ -256,6 +253,10 @@ namespace sqlpp
       static_check_t<not std::is_same<Database, void>::value, assert_where_dynamic_used_with_dynamic_statement_t>,
       check_where_t<Expression>>;
 
+  template <typename Database>
+  using check_where_empty_dynamic_t = static_combined_check_t<
+      static_check_t<not std::is_same<Database, void>::value, assert_where_dynamic_used_with_dynamic_statement_t>>;
+
   // NO WHERE YET
   template <bool WhereRequired>
   struct no_where_t
@@ -338,10 +339,11 @@ namespace sqlpp
         return _where_impl<_database_t>(Check{}, expression);
       }
 
-      auto dynamic_where() const -> _new_statement_t<check_where_dynamic_t<_database_t, boolean_operand>,
-                                                     where_t<_database_t, boolean_operand>>
+      auto dynamic_where() const
+          -> _new_statement_t<check_where_empty_dynamic_t<_database_t>, where_t<_database_t, unconditional_t>>
       {
-        return dynamic_where(::sqlpp::value(true));
+        return {static_cast<const derived_statement_t<Policies>&>(*this),
+                where_data_t<_database_t, unconditional_t>{unconditional_t{}}};
       }
 
     private:
@@ -360,35 +362,35 @@ namespace sqlpp
 
   // Interpreters
   template <typename Context, typename Database, typename Expression>
-  struct serializer_t<Context, where_data_t<Database, Expression>>
+  Context& serialize(const where_data_t<Database, Expression>& t, Context& context)
   {
-    using _serialize_check = serialize_check_of<Context, Expression>;
-    using T = where_data_t<Database, Expression>;
-
-    static Context& _(const T& t, Context& context)
+    context << " WHERE ";
+    serialize(t._expression, context);
+    if (not t._dynamic_expressions.empty())
     {
-      context << " WHERE ";
-      serialize(t._expression, context);
-      if (not t._dynamic_expressions.empty())
-      {
-        context << " AND ";
-      }
-      interpret_list(t._dynamic_expressions, " AND ", context);
+      context << " AND ";
+    }
+    interpret_list(t._dynamic_expressions, " AND ", context);
+    return context;
+  }
+
+  template <typename Context, typename Database>
+  Context& serialize(const where_data_t<Database, unconditional_t>& t, Context& context)
+  {
+    if (t._dynamic_expressions.empty())
+    {
       return context;
     }
-  };
+    context << " WHERE ";
+    interpret_list(t._dynamic_expressions, " AND ", context);
+    return context;
+  }
 
   template <typename Context>
-  struct serializer_t<Context, where_data_t<void, unconditional_t>>
+  Context& serialize(const where_data_t<void, unconditional_t>&, Context& context)
   {
-    using _serialize_check = consistent_t;
-    using T = where_data_t<void, unconditional_t>;
-
-    static Context& _(const T& /*unused*/, Context& context)
-    {
-      return context;
-    }
-  };
+    return context;
+  }
 
   template <typename T>
   auto where(T&& t) -> decltype(statement_t<void, no_where_t<false>>().where(std::forward<T>(t)))
@@ -401,6 +403,13 @@ namespace sqlpp
       -> decltype(statement_t<Database, no_where_t<false>>().dynamic_where(std::forward<T>(t)))
   {
     return statement_t<Database, no_where_t<false>>().dynamic_where(std::forward<T>(t));
+  }
+
+  template <typename Database>
+  auto dynamic_where(const Database & /*unused*/)
+      -> decltype(statement_t<Database, no_where_t<false>>().dynamic_where())
+  {
+    return statement_t<Database, no_where_t<false>>().dynamic_where();
   }
 
   inline auto unconditionally() -> decltype(statement_t<void, no_where_t<false>>().unconditionally())

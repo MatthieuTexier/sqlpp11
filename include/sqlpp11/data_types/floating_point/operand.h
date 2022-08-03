@@ -29,7 +29,6 @@
 
 #include <sqlpp11/type_traits.h>
 #include <sqlpp11/alias_operators.h>
-#include <sqlpp11/serializer.h>
 
 namespace sqlpp
 {
@@ -37,7 +36,7 @@ namespace sqlpp
   {
     using _traits = make_traits<floating_point, tag::is_expression, tag::is_wrapped_value>;
     using _nodes = detail::type_vector<>;
-    using _is_aggregate_expression = std::true_type;
+    using _is_literal_expression = std::true_type;
 
     using _value_t = double;
 
@@ -55,25 +54,14 @@ namespace sqlpp
     floating_point_operand& operator=(floating_point_operand&&) = default;
     ~floating_point_operand() = default;
 
-    bool _is_trivial() const
-    {
-      return _t == 0;
-    }
-
     _value_t _t;
   };
 
   template <typename Context>
-  struct serializer_t<Context, floating_point_operand>
+  Context& serialize(const floating_point_operand& t, Context& context)
   {
-    using _serialize_check = consistent_t;
-    using Operand = floating_point_operand;
-
-    static Context& _(const Operand& t, Context& context)
-    {
-      context << t._t;
-      return context;
-    }
-  };
+    context << t._t;
+    return context;
+  }
 }  // namespace sqlpp
 #endif
