@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Copyright (c) 2013 - 2015, Roland Bock
  * All rights reserved.
@@ -24,78 +26,37 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SQLPP_SQLITE3_PREPARED_STATEMENT_HANDLE_H
-#define SQLPP_SQLITE3_PREPARED_STATEMENT_HANDLE_H
-
-#include <memory>
-#include <sqlpp11/chrono.h>
-#include <sqlpp11/sqlite3/export.h>
-#include <string>
-#include <vector>
-
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable : 4251)
-#endif
-
 namespace sqlpp
 {
-  namespace sqlite3
+  namespace mysql
   {
-    class connection;
-
     namespace detail
     {
-      struct prepared_statement_handle_t
+      struct result_handle
       {
-        sqlite3_stmt* sqlite_statement;
+        MYSQL_RES* mysql_res;
         bool debug;
 
-        prepared_statement_handle_t(sqlite3_stmt* statement, bool debug_) : sqlite_statement(statement), debug(debug_)
+        result_handle(MYSQL_RES* res, bool debug_) : mysql_res{res}, debug{debug_}
         {
         }
 
-        prepared_statement_handle_t(const prepared_statement_handle_t&) = delete;
-        prepared_statement_handle_t(prepared_statement_handle_t&& rhs)
-        {
-          sqlite_statement = rhs.sqlite_statement;
-          rhs.sqlite_statement = nullptr;
+        result_handle(const result_handle&) = delete;
+        result_handle(result_handle&&) = default;
+        result_handle& operator=(const result_handle&) = delete;
+        result_handle& operator=(result_handle&&) = default;
 
-          debug = rhs.debug;
-        }
-        prepared_statement_handle_t& operator=(const prepared_statement_handle_t&) = delete;
-        prepared_statement_handle_t& operator=(prepared_statement_handle_t&& rhs)
+        ~result_handle()
         {
-          if (sqlite_statement != rhs.sqlite_statement)
-          {
-            sqlite_statement = rhs.sqlite_statement;
-            rhs.sqlite_statement = nullptr;
-          }
-          debug = rhs.debug;
-
-          return *this;
-        }
-
-        ~prepared_statement_handle_t()
-        {
-          if (sqlite_statement)
-          {
-            sqlite3_finalize(sqlite_statement);
-          }
+          if (mysql_res)
+            mysql_free_result(mysql_res);
         }
 
         bool operator!() const
         {
-          return !sqlite_statement;
+          return !mysql_res;
         }
       };
-    }
-
-  }  // namespace sqlite3
+    }  // namespace detail
+  }  // namespace mysql
 }  // namespace sqlpp
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
-
-#endif

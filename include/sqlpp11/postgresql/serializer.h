@@ -1,3 +1,5 @@
+#pragma once
+
 /**
  * Copyright © 2014-2015, Matthijs Möhlmann
  * All rights reserved.
@@ -25,9 +27,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SQLPP_POSTGRESQL_SERIALIZER_H
-#define SQLPP_POSTGRESQL_SERIALIZER_H
-
+#include <sqlpp11/chrono.h>
 #include <sqlpp11/parameter.h>
 #include <sqlpp11/wrap_operand.h>
 
@@ -44,16 +44,31 @@ namespace sqlpp
 
   inline postgresql::context_t& serialize(const blob_operand& t, postgresql::context_t& context)
   {
-    constexpr char hexChars[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+    constexpr char hex_chars[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
     context << "'\\x";
     for (const auto c : t._t)
     {
-      context << hexChars[c >> 4] << hexChars[c & 0x0F];
+      context << hex_chars[c >> 4] << hex_chars[c & 0x0F];
     }
     context << '\'';
 
     return context;
   }
-}
 
-#endif
+  template <typename Period>
+  postgresql::context_t& serialize(const time_point_operand<Period>& t, postgresql::context_t& context)
+  {
+    const auto dp = ::sqlpp::chrono::floor<::date::days>(t._t);
+    const auto time = ::date::make_time(t._t - dp);
+    const auto ymd = ::date::year_month_day{dp};
+    context << "TIMESTAMP WITH TIME ZONE '" << ymd << ' ' << time << "+00'";
+    return context;
+  }
+
+  template <typename Period>
+  postgresql::context_t& serialize(const time_of_day_operand<Period>& t, postgresql::context_t& context)
+  {
+    context << "TIME WITH TIME ZONE '" << ::date::make_time(t._t) << "+00'";
+    return context;
+  }
+}

@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Copyright (c) 2013 - 2015, Roland Bock
  * All rights reserved.
@@ -24,17 +26,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SQLPP_SQLITE3_BIND_RESULT_H
-#define SQLPP_SQLITE3_BIND_RESULT_H
-
-#include <memory>
-#include <iostream>
 #include <sqlpp11/chrono.h>
+#include <sqlpp11/detail/parse_date_time.h>
 #include <sqlpp11/exception.h>
+#include <sqlpp11/sqlite3/detail/prepared_statement_handle.h>
 #include <sqlpp11/sqlite3/export.h>
-#include <sqlpp11/sqlite3/prepared_statement_handle.h>
+
+#include <iostream>
+#include <memory>
 
 #ifdef _MSC_VER
+#include <iso646.h>
 #pragma warning(push)
 #pragma warning(disable : 4251)
 #endif
@@ -43,68 +45,13 @@ namespace sqlpp
 {
   namespace sqlite3
   {
-    namespace detail
-    {
-      inline auto check_first_digit(const char* text, bool digitFlag) -> bool
-      {
-        if (digitFlag)
-        {
-          if (not std::isdigit(*text))
-          {
-            return false;
-          }
-        }
-        else
-        {
-          if (std::isdigit(*text) or *text == '\0')
-          {
-            return false;
-          }
-        }
-        return true;
-      }
-
-      inline auto check_date_digits(const char* text) -> bool
-      {
-        for (const auto digitFlag : {true, true, true, true, false, true, true, false, true, true})  // YYYY-MM-DD
-        {
-          if (not check_first_digit(text, digitFlag))
-            return false;
-          ++text;
-        }
-        return true;
-      }
-
-      inline auto check_time_digits(const char* text) -> bool
-      {
-        for (const auto digitFlag : {true, true, false, true, true, false, true, true}) // hh:mm:ss
-        {
-          if (not check_first_digit(text, digitFlag))
-            return false;
-          ++text;
-        }
-        return true;
-      }
-
-      inline auto check_ms_digits(const char* text) -> bool
-      {
-        for (const auto digitFlag : {true, true, true})
-        {
-          if (not check_first_digit(text, digitFlag))
-            return false;
-          ++text;
-        }
-        return true;
-      }
-    }  // namespace detail
-
     class SQLPP11_SQLITE3_EXPORT bind_result_t
     {
       std::shared_ptr<detail::prepared_statement_handle_t> _handle;
 
     public:
       bind_result_t() = default;
-      bind_result_t(const std::shared_ptr<detail::prepared_statement_handle_t>& handle) : _handle(handle)
+      bind_result_t(const std::shared_ptr<detail::prepared_statement_handle_t>& handle) : _handle{handle}
       {
         if (_handle and _handle->debug)
           std::cerr << "Sqlite3 debug: Constructing bind result, using handle at " << _handle.get() << std::endl;
@@ -215,10 +162,10 @@ namespace sqlpp
         if (_handle->debug)
           std::cerr << "Sqlite3 debug: binding date result at index: " << index << std::endl;
 
+        *value = {};
         *is_null = sqlite3_column_type(_handle->sqlite_statement, static_cast<int>(index)) == SQLITE_NULL;
         if (*is_null)
         {
-          *value = {};
           return;
         }
 
@@ -226,17 +173,10 @@ namespace sqlpp
             reinterpret_cast<const char*>(sqlite3_column_text(_handle->sqlite_statement, static_cast<int>(index)));
         if (_handle->debug)
           std::cerr << "Sqlite3 debug: date string: " << date_string << std::endl;
-
-        if (detail::check_date_digits(date_string))
-        {
-          const auto ymd = ::date::year(std::atoi(date_string)) / atoi(date_string + 5) / atoi(date_string + 8);
-          *value = ::sqlpp::chrono::day_point(ymd);
-        }
-        else
+        if (::sqlpp::detail::parse_date(*value, date_string) == false)
         {
           if (_handle->debug)
             std::cerr << "Sqlite3 debug: invalid date result: " << date_string << std::endl;
-          *value = {};
         }
       }
 
@@ -245,10 +185,10 @@ namespace sqlpp
         if (_handle->debug)
           std::cerr << "Sqlite3 debug: binding date result at index: " << index << std::endl;
 
+        *value = {};
         *is_null = sqlite3_column_type(_handle->sqlite_statement, static_cast<int>(index)) == SQLITE_NULL;
         if (*is_null)
         {
-          *value = {};
           return;
         }
 
@@ -256,40 +196,11 @@ namespace sqlpp
             reinterpret_cast<const char*>(sqlite3_column_text(_handle->sqlite_statement, static_cast<int>(index)));
         if (_handle->debug)
           std::cerr << "Sqlite3 debug: date_time string: " << date_time_string << std::endl;
-
-        if (detail::check_date_digits(date_time_string))
-        {
-          const auto ymd =
-              ::date::year(std::atoi(date_time_string)) / atoi(date_time_string + 5) / atoi(date_time_string + 8);
-          *value = ::sqlpp::chrono::day_point(ymd);
-        }
-        else
+        // We treat DATETIME fields as containing either date+time or just date.
+        if (::sqlpp::detail::parse_date_or_timestamp(*value, date_time_string) == false)
         {
           if (_handle->debug)
             std::cerr << "Sqlite3 debug: invalid date_time result: " << date_time_string << std::endl;
-          *value = {};
-
-          return;
-        }
-
-        const auto time_string = date_time_string + 11; // YYYY-MM-DDT
-        if (detail::check_time_digits(time_string))
-        {
-          *value += ::std::chrono::hours(std::atoi(time_string + 0)) +
-                    std::chrono::minutes(std::atoi(time_string + 3)) + std::chrono::seconds(std::atoi(time_string + 6));
-        }
-        else
-        {
-          return;
-        }
-        const auto ms_string = time_string + 9; // hh:mm:ss.
-        if (detail::check_ms_digits(ms_string) and ms_string[4] == '\0')
-        {
-          *value += ::std::chrono::milliseconds(std::atoi(ms_string));
-        }
-        else
-        {
-          return;
         }
       }
 
@@ -308,7 +219,7 @@ namespace sqlpp
           case SQLITE_DONE:
             return false;
           default:
-            throw sqlpp::exception("Sqlite3 error: Unexpected return value for sqlite3_step()");
+            throw sqlpp::exception{"Sqlite3 error: Unexpected return value for sqlite3_step()"};
         }
       }
     };
@@ -317,6 +228,4 @@ namespace sqlpp
 
 #ifdef _MSC_VER
 #pragma warning(pop)
-#endif
-
 #endif

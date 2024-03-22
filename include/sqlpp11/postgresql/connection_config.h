@@ -1,3 +1,5 @@
+#pragma once
+
 /**
  * Copyright © 2014-2015, Matthijs Möhlmann
  * All rights reserved.
@@ -25,9 +27,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SQLPP_POSTGRESQL_CONNECTION_CONFIG_H
-#define SQLPP_POSTGRESQL_CONNECTION_CONFIG_H
-
 #include <sqlpp11/postgresql/visibility.h>
 #include <string>
 
@@ -35,12 +34,8 @@ namespace sqlpp
 {
   namespace postgresql
   {
-    class connection;
     struct DLL_PUBLIC connection_config
     {
-      // Needed for the connection pool
-      typedef ::sqlpp::postgresql::connection connection;
-
       enum class sslmode_t
       {
         disable,
@@ -96,5 +91,3 @@ namespace sqlpp
     };
   }
 }
-
-#endif

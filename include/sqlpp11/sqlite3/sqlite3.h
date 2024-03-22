@@ -1,5 +1,8 @@
+#pragma once
+
 /*
  * Copyright (c) 2013 - 2015, Roland Bock
+ * Copyright (c) 2023, Vesselin Atanasov
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
@@ -24,10 +27,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SQLPP_SQLITE3_H
-#define SQLPP_SQLITE3_H
-
 #include <sqlpp11/sqlite3/connection.h>
+#include <sqlpp11/sqlite3/connection_pool.h>
 #include <sqlpp11/sqlite3/insert_or.h>
-
-#endif

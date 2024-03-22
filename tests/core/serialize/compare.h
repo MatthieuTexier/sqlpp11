@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Copyright (c) 2013-2015, Roland Bock
  * All rights reserved.
@@ -23,14 +25,22 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SQLPP_TEST_SERIALIZER_H
-#define SQLPP_TEST_SERIALIZER_H
-
 #include "MockDb.h"
 #include <iostream>
 
 namespace
 {
+  template <typename Result, typename Expected>
+  void assert_equal(int lineNo, const Result& result, const Expected& expected)
+  {
+    if (result != expected)
+    {
+      std::cerr << __FILE__ << " " << lineNo << '\n' << "Expected: -->|" << expected << "|<--\n"
+                << "Received: -->|" << result << "|<--\n";
+      throw std::runtime_error("unexpected result");
+    }
+  }
+
   template <typename Expression>
   void compare(int lineNo, const Expression& expr, const std::string& expected)
   {
@@ -38,13 +48,6 @@ namespace
 
     const auto result = serialize(expr, printer).str();
 
-    if (result != expected)
-    {
-      std::cerr << __FILE__ << " " << lineNo << '\n' << "Expected: -->|" << expected << "|<--\n"
-                << "Received: -->|" << result << "|<--\n";
-      throw std::runtime_error("unexpected serialization result");
-    }
+    assert_equal(lineNo, result, expected);
   }
 }
-
-#endif

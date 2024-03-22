@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Copyright (c) 2013 - 2016, Roland Bock
  * All rights reserved.
@@ -24,9 +26,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SQLPP_SQLITE3_CONNECTION_CONFIG_H
-#define SQLPP_SQLITE3_CONNECTION_CONFIG_H
-
 #include <string>
 #include <iostream>
 
@@ -36,7 +35,7 @@ namespace sqlpp
   {
     struct connection_config
     {
-      connection_config() : path_to_database(), flags(0), vfs(), debug(false),password("")
+      connection_config() : path_to_database{}, flags{0}, vfs{}, debug{false},password{}
       {
       }
       connection_config(const connection_config&) = default;
@@ -45,7 +44,7 @@ namespace sqlpp
       connection_config& operator=(connection_config&&) = default;
 
       connection_config(std::string path, int fl = 0, std::string vf = "", bool dbg = false,std::string password="")
-          : path_to_database(std::move(path)), flags(fl), vfs(std::move(vf)), debug(dbg),password(password)
+          : path_to_database{std::move(path)}, flags{fl}, vfs{std::move(vf)}, debug{dbg},password{password}
       {
       }
 
@@ -69,5 +68,3 @@ namespace sqlpp
     };
   }
 }
-
-#endif

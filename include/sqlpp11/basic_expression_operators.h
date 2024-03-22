@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Copyright (c) 2013-2016, Roland Bock
  * Copyright (c) 2016, Aaron Bishop
@@ -24,9 +26,6 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
-#ifndef SQLPP11_BASIC_EXPRESSION_OPERATORS_H
-#define SQLPP11_BASIC_EXPRESSION_OPERATORS_H
 
 #include <sqlpp11/value_type_fwd.h>
 #include <sqlpp11/bad_expression.h>
@@ -172,7 +171,7 @@ namespace sqlpp
     auto operator>=(T t) const -> _new_binary_expression_t<greater_equal_t, T>
     {
       using rhs = wrap_operand_t<T>;
-      check_comparison_t<Expr, rhs>{};
+      check_comparison_t<Expr, rhs>::verify();
 
       return {*static_cast<const Expr*>(this), rhs{t}};
     }
@@ -315,5 +314,3 @@ namespace sqlpp
     }
   };
 }  // namespace sqlpp
-
-#endif

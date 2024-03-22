@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Copyright (c) 2013-2015, Roland Bock
  * Copyright (c) 2017, Juan Dent
@@ -24,9 +26,6 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
-#ifndef SQLPP11_TRIM_H
-#define SQLPP11_TRIM_H
 
 #include <sqlpp11/char_sequence.h>
 #include <sqlpp11/data_types/integral/data_type.h>
@@ -83,7 +82,7 @@ namespace sqlpp
   Context& serialize(const trim_t<Flag, Expr>& t, Context& context)
   {
     context << "TRIM(";
-    serialize(t._expr, context);
+    serialize_operand(t._expr, context);
     context << ")";
     return context;
   }
@@ -96,5 +95,3 @@ namespace sqlpp
   }
 
 }  // namespace sqlpp
-
-#endif

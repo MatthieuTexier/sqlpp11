@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Copyright (c) 2013-2015, Roland Bock
  * All rights reserved.
@@ -24,9 +26,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SQLPP11_EVAL_H
-#define SQLPP11_EVAL_H
-
 #include <sqlpp11/type_traits.h>
 #include <sqlpp11/field_spec.h>
 #include <sqlpp11/alias_provider.h>
@@ -51,7 +50,7 @@ namespace sqlpp
   template <typename Db,
             typename Expr,
             typename std::enable_if<not std::is_convertible<Expr, std::string>::value, int>::type = 0>
-  auto eval(Db& db, Expr expr) -> typename eval_t<Db, Expr>::type
+  auto eval(Db& db, Expr expr) -> typename eval_t<typename Db::_connection_base_t, Expr>::type
   {
     return db(select(expr.as(alias::a))).front().a;
   }
@@ -62,5 +61,3 @@ namespace sqlpp
     return eval(db, verbatim<ValueType>(sql_code));
   }
 }  // namespace sqlpp
-
-#endif

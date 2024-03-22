@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Copyright (c) 2013 - 2015, Roland Bock
  * All rights reserved.
@@ -24,36 +26,30 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SQLPP_MYSQL_CONNECTION_CONFIG_H
-#define SQLPP_MYSQL_CONNECTION_CONFIG_H
-
 #include <string>
 
 namespace sqlpp
 {
   namespace mysql
   {
-    class connection;
     struct connection_config
     {
-      typedef ::sqlpp::mysql::connection connection;
-      std::string host = "localhost";
+      std::string host{"localhost"};
       std::string user;
       std::string password;
       std::string database;
-      unsigned int port = 0;
+      unsigned int port{0};
       std::string unix_socket;
-      unsigned long client_flag = 0;
-      std::string charset = "utf8";
-      bool auto_reconnect = true;
-      bool debug = false;
-      unsigned int connect_timeout_seconds = 0;  // 0 = do not override MySQL library default
+      unsigned long client_flag{0};
+      std::string charset{"utf8"};
+      bool debug{false};
+      unsigned int connect_timeout_seconds{0};  // 0 = do not override MySQL library default
 
       bool operator==(const connection_config& other) const
       {
         return (other.host == host and other.user == user and other.password == password and
-                other.database == database and other.charset == charset and other.auto_reconnect == auto_reconnect and
-                other.debug == debug and other.connect_timeout_seconds == connect_timeout_seconds);
+                other.database == database and other.charset == charset and other.debug == debug and
+                other.connect_timeout_seconds == connect_timeout_seconds);
       }
 
       bool operator!=(const connection_config& other) const
@@ -63,5 +59,3 @@ namespace sqlpp
     };
   }
 }
-
-#endif

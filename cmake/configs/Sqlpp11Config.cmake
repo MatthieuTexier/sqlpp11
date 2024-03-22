@@ -23,6 +23,10 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+# Temporarly prepend CMAKE_MODULE_PATH with current directory to find helper scripts such as FindPackage scripts
+set(CMAKE_MODULE_PATH_save ${CMAKE_MODULE_PATH})
+list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
+
 include(CMakeFindDependencyMacro)
 find_dependency(Threads)
 find_dependency(date REQUIRED)
@@ -51,13 +55,17 @@ endforeach()
 
 # Import "ddl2cpp" script
 if(NOT TARGET sqlpp11::ddl2cpp)
-  get_filename_component(sqlpp11_ddl2cpp_location "${CMAKE_CURRENT_LIST_DIR}/../../../bin/sqlpp11-ddl2cpp" REALPATH)
-  if(NOT EXISTS "${sqlpp11_ddl2cpp_location}")
-    message(FATAL_ERROR "The imported target sqlpp11::ddl2cpp references the file '${sqlpp11_ddl2cpp_location}' but this file does not exists.")
-  endif()
-  add_executable(sqlpp11::ddl2cpp IMPORTED)
-  set_target_properties(sqlpp11::ddl2cpp PROPERTIES
-    IMPORTED_LOCATION "${sqlpp11_ddl2cpp_location}"
-  )
-  unset(sqlpp11_ddl2cpp_location)
+    get_filename_component(sqlpp11_ddl2cpp_location "${CMAKE_CURRENT_LIST_DIR}/../../../bin/sqlpp11-ddl2cpp" REALPATH)
+    if(NOT EXISTS "${sqlpp11_ddl2cpp_location}")
+        message(FATAL_ERROR "The imported target sqlpp11::ddl2cpp references the file '${sqlpp11_ddl2cpp_location}' but this file does not exists.")
+    endif()
+    add_executable(sqlpp11::ddl2cpp IMPORTED)
+    set_target_properties(sqlpp11::ddl2cpp PROPERTIES
+        IMPORTED_LOCATION "${sqlpp11_ddl2cpp_location}"
+    )
+    unset(sqlpp11_ddl2cpp_location)
 endif()
+
+# Resture module path 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH_save})
+unset(CMAKE_MODULE_PATH_save)

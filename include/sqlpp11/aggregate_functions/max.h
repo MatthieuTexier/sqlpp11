@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Copyright (c) 2013-2020, Roland Bock, MacDue
  * All rights reserved.
@@ -23,9 +25,6 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
-#ifndef SQLPP11_AGGREGATE_FUNCTIONS_MAX_H
-#define SQLPP11_AGGREGATE_FUNCTIONS_MAX_H
 
 #include <sqlpp11/type_traits.h>
 #include <sqlpp11/char_sequence.h>
@@ -54,10 +53,10 @@ namespace sqlpp
     };
   };
 
-  template <typename Expr>
-  struct max_t : public expression_operators<max_t<Expr>, value_type_of<Expr>>,
-                 public aggregate_function_operators<max_t<Expr>>,
-                 public alias_operators<max_t<Expr>>
+  template <typename Flag, typename Expr>
+  struct max_t : public expression_operators<max_t<Flag, Expr>, value_type_of<Expr>>,
+                 public aggregate_function_operators<max_t<Flag, Expr>>,
+                 public alias_operators<max_t<Flag, Expr>>
   {
     using _traits = make_traits<value_type_of<Expr>, tag::is_expression, tag::is_selectable>;
     using _nodes = detail::type_vector<Expr, aggregate_function>;
@@ -79,17 +78,31 @@ namespace sqlpp
     Expr _expr;
   };
 
-  template <typename Context, typename Expr>
-  Context& serialize(const max_t<Expr>& t, Context& context)
+  template <typename Context, typename Flag, typename Expr>
+  Context& serialize(const max_t<Flag, Expr>& t, Context& context)
   {
     context << "MAX(";
-    serialize(t._expr, context);
+    if (std::is_same<distinct_t, Flag>::value)
+    {
+      serialize(Flag(), context);
+      context << ' ';
+    }
+    serialize_operand(t._expr, context);
     context << ")";
     return context;
   }
 
   template <typename T>
-  auto max(T t) -> max_t<wrap_operand_t<T>>
+  auto max(T t) -> max_t<noop, wrap_operand_t<T>>
+  {
+    static_assert(not contains_aggregate_function_t<wrap_operand_t<T>>::value,
+                  "max() cannot be used on an aggregate function");
+    static_assert(is_expression_t<wrap_operand_t<T>>::value, "max() requires an expression as argument");
+    return {t};
+  }
+
+  template <typename T>
+  auto max(const distinct_t& /*unused*/, T t) -> max_t<distinct_t, wrap_operand_t<T>>
   {
     static_assert(not contains_aggregate_function_t<wrap_operand_t<T>>::value,
                   "max() cannot be used on an aggregate function");
@@ -97,5 +110,3 @@ namespace sqlpp
     return {t};
   }
 }  // namespace sqlpp
-
-#endif

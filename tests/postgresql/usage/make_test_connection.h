@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Copyright (c) 2021, Roland Bock
  * All rights reserved.
@@ -23,22 +25,16 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SQLPP11_TEST_POSTGRESQL_USAGE_CONNECT_H
-#define SQLPP11_TEST_POSTGRESQL_USAGE_CONNECT_H
-
-
 #include <sqlpp11/postgresql/postgresql.h>
 
 namespace sqlpp
 {
   namespace postgresql
   {
-    // Starts a connection and sets the time zone to UTC
-    inline ::sqlpp::postgresql::connection make_test_connection()
+    // Get configuration for test connection
+    inline std::shared_ptr<sqlpp::postgresql::connection_config> make_test_config()
     {
-      namespace sql = sqlpp::postgresql;
-
-      auto config = std::make_shared<sql::connection_config>();
+      auto config = std::make_shared<sqlpp::postgresql::connection_config>();
 
 #ifdef WIN32
       config->dbname = "test";
@@ -49,6 +45,15 @@ namespace sqlpp
       config->dbname = "sqlpp_postgresql";
       config->debug = true;
 #endif
+      return config;
+    }
+
+    // Starts a connection and sets the time zone to UTC
+    inline ::sqlpp::postgresql::connection make_test_connection(const std::string &tz = "UTC")
+    {
+      namespace sql = sqlpp::postgresql;
+
+      auto config = make_test_config();
 
       sql::connection db;
       try
@@ -62,11 +67,9 @@ namespace sqlpp
         throw;
       }
 
-      db.execute(R"(SET TIME ZONE 'UTC';)");
+      db.execute("SET TIME ZONE " + tz + ";");
 
       return db;
     }
   }  // namespace postgresql
 }  // namespace sqlpp
-
-#endif

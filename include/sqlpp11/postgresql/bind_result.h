@@ -1,3 +1,5 @@
+#pragma once
+
 /**
  * Copyright © 2014-2020, Matthijs Möhlmann
  * All rights reserved.
@@ -25,20 +27,19 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SQLPP_POSTGRESQL_BIND_RESULT_H
-#define SQLPP_POSTGRESQL_BIND_RESULT_H
-
-#include <memory>
 #include <sqlpp11/chrono.h>
 #include <sqlpp11/data_types.h>
+#include <sqlpp11/detail/parse_date_time.h>
 
 #include <iomanip>
 #include <iostream>
+#include <memory>
 #include <sstream>
 
 #include "detail/prepared_statement_handle.h"
 
 #ifdef _MSC_VER
+#include <iso646.h>
 #pragma warning(disable : 4800)  // int to bool
 #endif
 namespace sqlpp
@@ -55,11 +56,55 @@ namespace sqlpp
     private:
       std::shared_ptr<detail::statement_handle_t> _handle;
 
-      bool next_impl();
+      bool next_impl()
+      {
+        if (_handle->debug())
+        {
+          std::cerr << "PostgreSQL debug: accessing next row of handle at " << _handle.get() << std::endl;
+        }
+
+        // Fetch total amount
+        if (_handle->total_count == 0U)
+        {
+          _handle->total_count = _handle->result.records_size();
+          if (_handle->total_count == 0U)
+            return false;
+        }
+        else
+        {
+          // Next row
+          if (_handle->count < (_handle->total_count - 1))
+          {
+            _handle->count++;
+          }
+          else
+          {
+            return false;
+          }
+        }
+
+        // Really needed?
+        if (_handle->fields == 0U)
+        {
+          _handle->fields = _handle->result.field_count();
+        }
+
+        return true;
+      }
 
     public:
       bind_result_t() = default;
-      bind_result_t(const std::shared_ptr<detail::statement_handle_t>& handle);
+
+      bind_result_t(const std::shared_ptr<detail::statement_handle_t>& handle) : _handle(handle)
+      {
+        if (this->_handle && this->_handle->debug())
+        {
+          // cerr
+          std::cerr << "PostgreSQL debug: constructing bind result, using handle at: " << this->_handle.get()
+                    << std::endl;
+        }
+      }
+
       bind_result_t(const bind_result_t&) = delete;
       bind_result_t(bind_result_t&&) = default;
       bind_result_t& operator=(const bind_result_t&) = delete;
@@ -97,385 +142,197 @@ namespace sqlpp
         }
       }
 
-      void _bind_boolean_result(size_t index, signed char* value, bool* is_null);
-      void _bind_floating_point_result(size_t index, double* value, bool* is_null);
-      void _bind_integral_result(size_t index, int64_t* value, bool* is_null);
-      void _bind_unsigned_integral_result(size_t index, uint64_t* value, bool* is_null);
-      void _bind_text_result(size_t index, const char** value, size_t* len);
-      void _bind_date_result(size_t index, ::sqlpp::chrono::day_point* value, bool* is_null);
-      void _bind_date_time_result(size_t index, ::sqlpp::chrono::microsecond_point* value, bool* is_null);
-      void _bind_time_of_day_result(size_t index, ::std::chrono::microseconds* value, bool* is_null);
-      void _bind_blob_result(size_t index, const uint8_t** value, size_t* len);
-
-      int size() const;
-    };
-
-    inline bind_result_t::bind_result_t(const std::shared_ptr<detail::statement_handle_t>& handle) : _handle(handle)
-    {
-      if (this->_handle && this->_handle->debug())
+      void _bind_boolean_result(size_t _index, signed char* value, bool* is_null)
       {
-        // cerr
-        std::cerr << "PostgreSQL debug: constructing bind result, using handle at: " << this->_handle.get()
-                  << std::endl;
-      }
-    }
-
-    inline bool bind_result_t::next_impl()
-    {
-      if (_handle->debug())
-      {
-        std::cerr << "PostgreSQL debug: accessing next row of handle at " << _handle.get() << std::endl;
-      }
-
-      // Fetch total amount
-      if (_handle->totalCount == 0U)
-      {
-        _handle->totalCount = _handle->result.records_size();
-        if (_handle->totalCount == 0U)
-          return false;
-      }
-      else
-      {
-        // Next row
-        if (_handle->count < (_handle->totalCount - 1))
+        auto index = static_cast<int>(_index);
+        if (_handle->debug())
         {
-          _handle->count++;
+          std::cerr << "PostgreSQL debug: binding boolean result at index: " << index << std::endl;
+        }
+
+        *is_null = _handle->result.is_null(_handle->count, index);
+        *value = _handle->result.get_bool_value(_handle->count, index);
+      }
+
+      void _bind_floating_point_result(size_t _index, double* value, bool* is_null)
+      {
+        auto index = static_cast<int>(_index);
+        if (_handle->debug())
+        {
+          std::cerr << "PostgreSQL debug: binding floating_point result at index: " << index << std::endl;
+        }
+
+        *is_null = _handle->result.is_null(_handle->count, index);
+        *value = _handle->result.get_double_value(_handle->count, index);
+      }
+
+      void _bind_integral_result(size_t _index, int64_t* value, bool* is_null)
+      {
+        auto index = static_cast<int>(_index);
+        if (_handle->debug())
+        {
+          std::cerr << "PostgreSQL debug: binding integral result at index: " << index << std::endl;
+        }
+
+        *is_null = _handle->result.is_null(_handle->count, index);
+        *value = _handle->result.get_int64_value(_handle->count, index);
+      }
+
+      void _bind_unsigned_integral_result(size_t _index, uint64_t* value, bool* is_null)
+      {
+        auto index = static_cast<int>(_index);
+        if (_handle->debug())
+        {
+          std::cerr << "PostgreSQL debug: binding unsigned integral result at index: " << index << std::endl;
+        }
+
+        *is_null = _handle->result.is_null(_handle->count, index);
+        *value = _handle->result.get_uint64_value(_handle->count, index);
+      }
+
+      void _bind_text_result(size_t _index, const char** value, size_t* len)
+      {
+        auto index = static_cast<int>(_index);
+        if (_handle->debug())
+        {
+          std::cerr << "PostgreSQL debug: binding text result at index: " << index << std::endl;
+        }
+
+        if (_handle->result.is_null(_handle->count, index))
+        {
+          *value = nullptr;
+          *len = 0;
         }
         else
         {
-          return false;
+          *value = _handle->result.get_char_ptr_value(_handle->count, index);
+          *len = static_cast<size_t>(_handle->result.length(_handle->count, index));
         }
       }
 
-      // Really needed?
-      if (_handle->fields == 0U)
+      // PostgreSQL will return one of those (using the default ISO client):
+      //
+      // 2010-10-11 01:02:03 - ISO timestamp without timezone
+      // 2011-11-12 01:02:03.123456 - ISO timesapt with sub-second (microsecond) precision
+      // 1997-12-17 07:37:16-08 - ISO timestamp with timezone
+      // 1992-10-10 01:02:03-06:30 - for some timezones with non-hour offset
+      // 1900-01-01 - date only
+      // we do not support time-only values !
+      void _bind_date_result(size_t _index, ::sqlpp::chrono::day_point* value, bool* is_null)
       {
-        _handle->fields = _handle->result.field_count();
-      }
+        auto index = static_cast<int>(_index);
 
-      return true;
-    }
-
-    inline void bind_result_t::_bind_boolean_result(size_t _index, signed char* value, bool* is_null)
-    {
-      auto index = static_cast<int>(_index);
-      if (_handle->debug())
-      {
-        std::cerr << "PostgreSQL debug: binding boolean result at index: " << index << std::endl;
-      }
-
-      *is_null = _handle->result.isNull(_handle->count, index);
-      *value = _handle->result.getBoolValue(_handle->count, index);
-    }
-
-    inline void bind_result_t::_bind_floating_point_result(size_t _index, double* value, bool* is_null)
-    {
-      auto index = static_cast<int>(_index);
-      if (_handle->debug())
-      {
-        std::cerr << "PostgreSQL debug: binding floating_point result at index: " << index << std::endl;
-      }
-
-      *is_null = _handle->result.isNull(_handle->count, index);
-      *value = _handle->result.getDoubleValue(_handle->count, index);
-    }
-
-    inline void bind_result_t::_bind_integral_result(size_t _index, int64_t* value, bool* is_null)
-    {
-      auto index = static_cast<int>(_index);
-      if (_handle->debug())
-      {
-        std::cerr << "PostgreSQL debug: binding integral result at index: " << index << std::endl;
-      }
-
-      *is_null = _handle->result.isNull(_handle->count, index);
-      *value = _handle->result.getInt64Value(_handle->count, index);
-    }
-
-    inline void bind_result_t::_bind_unsigned_integral_result(size_t _index, uint64_t* value, bool* is_null)
-    {
-      auto index = static_cast<int>(_index);
-      if (_handle->debug())
-      {
-        std::cerr << "PostgreSQL debug: binding unsigned integral result at index: " << index << std::endl;
-      }
-
-      *is_null = _handle->result.isNull(_handle->count, index);
-      *value = _handle->result.getUInt64Value(_handle->count, index);
-    }
-
-    inline void bind_result_t::_bind_text_result(size_t _index, const char** value, size_t* len)
-    {
-      auto index = static_cast<int>(_index);
-      if (_handle->debug())
-      {
-        std::cerr << "PostgreSQL debug: binding text result at index: " << index << std::endl;
-      }
-
-      if (_handle->result.isNull(_handle->count, index))
-      {
-        *value = nullptr;
-        *len = 0;
-      }
-      else
-      {
-        *value = _handle->result.getCharPtrValue(_handle->count, index);
-        *len = static_cast<size_t>(_handle->result.length(_handle->count, index));
-      }
-    }
-
-    // same parsing logic as SQLite connector
-    // PostgreSQL will return one of those (using the default ISO client):
-    //
-    // 2010-10-11 01:02:03 - ISO timestamp without timezone
-    // 2011-11-12 01:02:03.123456 - ISO timesapt with sub-second (microsecond) precision
-    // 1997-12-17 07:37:16-08 - ISO timestamp with timezone
-    // 1992-10-10 01:02:03-06:30 - for some timezones with non-hour offset
-    // 1900-01-01 - date only
-    // we do not support time-only values !
-    namespace detail
-    {
-      inline auto check_first_digit(const char* text, bool digitFlag) -> bool
-      {
-        if (digitFlag)
+        if (_handle->debug())
         {
-          if (not std::isdigit(*text))
-          {
-            return false;
-          }
+          std::cerr << "PostgreSQL debug: binding date result at index: " << index << std::endl;
         }
-        else
+
+        *value = {};
+        *is_null = _handle->result.is_null(_handle->count, index);
+        if (*is_null)
         {
-          if (std::isdigit(*text) or *text == '\0')
-          {
-            return false;
-          }
+          return;
         }
-        return true;
-      }
 
-      inline auto check_date_digits(const char* text) -> bool
-      {
-        for (const auto digitFlag : {true, true, true, true, false, true, true, false, true, true})  // YYYY-MM-DD
-        {
-          if (not check_first_digit(text, digitFlag))
-            return false;
-          ++text;
-        }
-        return true;
-      }
-
-      inline auto check_time_digits(const char* text) -> bool
-      {
-        for (const auto digitFlag : {true, true, false, true, true, false, true, true}) // hh:mm:ss
-        {
-          if (not check_first_digit(text, digitFlag))
-            return false;
-          ++text;
-        }
-        return true;
-      }
-
-      inline auto check_us_digits(const char* text) -> bool
-      {
-        for (const auto digitFlag : {true, true, true, true, true, true})
-        {
-          if (not check_first_digit(text, digitFlag))
-            return false;
-          ++text;
-        }
-        return true;
-      }
-
-      inline auto check_tz_digits(const char* text) -> bool
-      {
-        for (const auto digitFlag : {false, true, true, false, true, true})
-        {
-          if (not check_first_digit(text, digitFlag))
-            return false;
-          ++text;
-        }
-        return true;
-      }
-    }  // namespace
-
-    inline void bind_result_t::_bind_date_result(size_t _index, ::sqlpp::chrono::day_point* value, bool* is_null)
-    {
-      auto index = static_cast<int>(_index);
-
-      if (_handle->debug())
-      {
-        std::cerr << "PostgreSQL debug: binding date result at index: " << index << std::endl;
-      }
-
-      *is_null = _handle->result.isNull(_handle->count, index);
-
-      if (!(*is_null))
-      {
-        const auto date_string = _handle->result.getCharPtrValue(_handle->count, index);
-
+        const auto date_string = _handle->result.get_char_ptr_value(_handle->count, index);
         if (_handle->debug())
         {
           std::cerr << "PostgreSQL debug: date string: " << date_string << std::endl;
         }
-
-        if (detail::check_date_digits(date_string))
-        {
-          const auto ymd =
-              ::date::year(std::atoi(date_string)) / std::atoi(date_string + 5) / std::atoi(date_string + 8);
-          *value = ::sqlpp::chrono::day_point(ymd);
-        }
-        else
+        if (::sqlpp::detail::parse_date(*value, date_string) == false)
         {
           if (_handle->debug())
+          {
             std::cerr << "PostgreSQL debug: got invalid date '" << date_string << "'" << std::endl;
-          *value = {};
+          }
         }
       }
-      else
+
+      // always returns UTC time for timestamp with time zone
+      void _bind_date_time_result(size_t _index, ::sqlpp::chrono::microsecond_point* value, bool* is_null)
       {
+        auto index = static_cast<int>(_index);
+        if (_handle->debug())
+        {
+          std::cerr << "PostgreSQL debug: binding date_time result at index: " << index << std::endl;
+        }
+
         *value = {};
-      }
-    }
+        *is_null = _handle->result.is_null(_handle->count, index);
+        if (*is_null)
+        {
+          return;
+        }
 
-    // always returns local time for timestamp with time zone
-    inline void bind_result_t::_bind_date_time_result(size_t _index, ::sqlpp::chrono::microsecond_point* value, bool* is_null)
-    {
-      auto index = static_cast<int>(_index);
-      if (_handle->debug())
-      {
-        std::cerr << "PostgreSQL debug: binding date_time result at index: " << index << std::endl;
-      }
-
-      *is_null = _handle->result.isNull(_handle->count, index);
-
-      if (!(*is_null))
-      {
-        const auto date_string = _handle->result.getCharPtrValue(_handle->count, index);
-
+        const auto date_string = _handle->result.get_char_ptr_value(_handle->count, index);
         if (_handle->debug())
         {
           std::cerr << "PostgreSQL debug: got date_time string: " << date_string << std::endl;
         }
-        if (detail::check_date_digits(date_string))
-        {
-          const auto ymd =
-              ::date::year(std::atoi(date_string)) / std::atoi(date_string + 5) / std::atoi(date_string + 8);
-          *value = ::sqlpp::chrono::day_point(ymd);
-        }
-        else
+        if (::sqlpp::detail::parse_timestamp(*value, date_string) == false)
         {
           if (_handle->debug())
-            std::cerr << "PostgreSQL debug: got invalid date_time" << std::endl;
-          *value = {};
-          return;
-        }
-
-        if (std::strlen(date_string) <= 11)
-          return;
-        const auto time_string = date_string + 11; // YYYY-MM-DDT
-        if (detail::check_time_digits(time_string))
-        {
-          *value += std::chrono::hours(std::atoi(time_string)) + std::chrono::minutes(std::atoi(time_string + 3)) +
-                    std::chrono::seconds(std::atoi(time_string + 6));
-        }
-        else
-        {
-          return;
-        }
-
-        if (std::strlen(time_string) <= 9)
-          return;
-        auto us_string = time_string + 9;  // hh:mm:ss.
-        int usec = 0;
-        for (size_t i = 0u; i < 6u; ++i)
-        {
-          if (std::isdigit(us_string[0]))
           {
-            usec = 10 * usec + (us_string[0] - '0');
-            ++us_string;
+            std::cerr << "PostgreSQL debug: got invalid date_time '" << date_string << "'" << std::endl;
           }
-          else
-            usec *= 10;
         }
-        *value += ::std::chrono::microseconds(usec);
       }
-    }
 
-    // always returns local time for time with time zone
-    inline void bind_result_t::_bind_time_of_day_result(size_t _index, ::std::chrono::microseconds* value, bool* is_null)
-    {
+      // always returns UTC time for time with time zone
+      void _bind_time_of_day_result(size_t _index, ::std::chrono::microseconds* value, bool* is_null)
+      {
         auto index = static_cast<int>(_index);
         if (_handle->debug())
         {
-            std::cerr << "PostgreSQL debug: binding time result at index: " << index << std::endl;
+          std::cerr << "PostgreSQL debug: binding time result at index: " << index << std::endl;
         }
 
-        *is_null = _handle->result.isNull(_handle->count, index);
-
-        if (!(*is_null))
+        *value = {};
+        *is_null = _handle->result.is_null(_handle->count, index);
+        if (*is_null)
         {
-            const auto time_string = _handle->result.getCharPtrValue(_handle->count, index);
-
-            if (_handle->debug())
-            {
-                std::cerr << "PostgreSQL debug: got time string: " << time_string << std::endl;
-            }
-
-            if (detail::check_time_digits(time_string))
-            {
-                *value += std::chrono::hours(std::atoi(time_string)) + std::chrono::minutes(std::atoi(time_string + 3)) +
-                          std::chrono::seconds(std::atoi(time_string + 6));
-            }
-            else
-            {
-                return;
-            }
-
-            if (std::strlen(time_string) <= 9)
-                return;
-            auto us_string = time_string + 9;  // hh:mm:ss.
-            int usec = 0;
-            for (size_t i = 0u; i < 6u; ++i)
-            {
-                if (std::isdigit(us_string[0]))
-                {
-                    usec = 10 * usec + (us_string[0] - '0');
-                    ++us_string;
-                }
-                else
-                    usec *= 10;
-            }
-            *value += ::std::chrono::microseconds(usec);
+          return;
         }
-    }
 
-    inline void bind_result_t::_bind_blob_result(size_t _index, const uint8_t** value, size_t* len)
-    {
+        const auto time_string = _handle->result.get_char_ptr_value(_handle->count, index);
 
-      auto index = static_cast<int>(_index);
-      if (_handle->debug())
-      {
-        std::cerr << "PostgreSQL debug: binding blob result at index: " << index << std::endl;
+        if (_handle->debug())
+        {
+          std::cerr << "PostgreSQL debug: got time string: " << time_string << std::endl;
+        }
+
+        if (::sqlpp::detail::parse_time_of_day(*value, time_string) == false)
+        {
+          if (_handle->debug()) {
+            std::cerr << "PostgreSQL debug: got invalid time '" << time_string << "'" << std::endl;
+          }
+        }
       }
 
-      if (_handle->result.isNull(_handle->count, index))
+      void _bind_blob_result(size_t _index, const uint8_t** value, size_t* len)
       {
-        *value = nullptr;
-        *len = 0;
-      }
-      else
-      {
-        *value = _handle->result.getBlobValue(_handle->count, index);
-        *len   = static_cast<size_t>(_handle->result.length(_handle->count, index));
-      }
-    }
+        auto index = static_cast<int>(_index);
+        if (_handle->debug())
+        {
+          std::cerr << "PostgreSQL debug: binding blob result at index: " << index << std::endl;
+        }
 
-    inline int bind_result_t::size() const
-    {
-      return _handle->result.records_size();
-    }
+        if (_handle->result.is_null(_handle->count, index))
+        {
+          *value = nullptr;
+          *len = 0;
+        }
+        else
+        {
+          *value = _handle->result.get_blob_value(_handle->count, index);
+          *len   = static_cast<size_t>(_handle->result.length(_handle->count, index));
+        }
+      }
+
+      int size() const
+      {
+        return _handle->result.records_size();
+      }
+    };
   }  // namespace postgresql
 }  // namespace sqlpp
-
-#endif

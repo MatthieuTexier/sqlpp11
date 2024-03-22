@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Copyright (c) 2013-2015, Roland Bock
  * All rights reserved.
@@ -23,11 +25,9 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SQLPP_MOCK_DB_H
-#define SQLPP_MOCK_DB_H
-
 #include <iostream>
 #include <sqlpp11/connection.h>
+#include <sqlpp11/detail/float_safe_ostringstream.h>
 #include <sqlpp11/transaction.h>
 #include <sqlpp11/data_types/no_value.h>
 #include <sqlpp11/schema.h>
@@ -49,7 +49,7 @@ struct MockDb : public sqlpp::connection
 
   struct _serializer_context_t
   {
-    std::ostringstream _os;
+    ::sqlpp::detail::float_safe_ostringstream _os;
 
     _serializer_context_t() = default;
     _serializer_context_t(const _serializer_context_t& rhs)
@@ -68,7 +68,7 @@ struct MockDb : public sqlpp::connection
     }
 
     template <typename T>
-    std::ostream& operator<<(T t)
+    ::sqlpp::detail::float_safe_ostringstream& operator<<(T t)
     {
       return _os << t;
     }
@@ -494,5 +494,3 @@ struct MockSizeDb : public sqlpp::connection
   // temporary data store to verify the expected results were produced
   InternalMockData _mock_data;
 };
-
-#endif

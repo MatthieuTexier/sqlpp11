@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Copyright (c) 2013 - 2015, Roland Bock
  * All rights reserved.
@@ -23,9 +25,6 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
-#ifndef SQLPP_SQLITE3_INSERT_OR_H
-#define SQLPP_SQLITE3_INSERT_OR_H
 
 #include <sqlpp11/default_value.h>
 #include <sqlpp11/insert_value_list.h>
@@ -137,18 +136,16 @@ namespace sqlpp
       return {blank_insert_or_ignore_t<Database>().into(table)};
     }
 
-    inline sqlite3::serializer_t& serialize(const sqlite3::insert_or_replace_name_t&, sqlite3::serializer_t& context)
+    inline sqlite3::context_t& serialize(const sqlite3::insert_or_replace_name_t&, sqlite3::context_t& context)
     {
       context << "INSERT OR REPLACE ";
       return context;
     }
 
-    inline sqlite3::serializer_t& serialize(const sqlite3::insert_or_ignore_name_t&, sqlite3::serializer_t& context)
+    inline sqlite3::context_t& serialize(const sqlite3::insert_or_ignore_name_t&, sqlite3::context_t& context)
     {
       context << "INSERT OR IGNORE ";
       return context;
     }
   }
 }
-
-#endif

@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Copyright (c) 2013 - 2015, Roland Bock
  * All rights reserved.
@@ -24,28 +26,23 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SQLPP_MYSQL_SERIALIZER_H
-#define SQLPP_MYSQL_SERIALIZER_H
-
 #include <sqlpp11/data_types/text/concat.h>
 #include <sqlpp11/insert_value_list.h>
 
 namespace sqlpp
 {
   template <typename First, typename... Args>
-  mysql::serializer_t& serialize(const concat_t<First, Args...>& t, mysql::serializer_t& context)
+  mysql::context_t& serialize(const concat_t<First, Args...>& t, mysql::context_t& ctx)
   {
-    context << "CONCAT(";
-    interpret_tuple(t._args, ',', context);
-    context << ')';
-    return context;
+    ctx << "CONCAT(";
+    interpret_tuple(t._args, ',', ctx);
+    ctx << ')';
+    return ctx;
   }
 
-  inline mysql::serializer_t& serialize(const insert_default_values_data_t&, mysql::serializer_t& context)
+  inline mysql::context_t& serialize(const insert_default_values_data_t&, mysql::context_t& ctx)
   {
-    context << " () VALUES()";
-    return context;
+    ctx << " () VALUES()";
+    return ctx;
   }
 }
-
-#endif

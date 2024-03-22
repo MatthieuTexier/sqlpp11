@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Copyright (c) 2013 - 2015, Roland Bock
  * All rights reserved.
@@ -24,15 +26,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SQLPP_MYSQL_CHAR_RESULT_H
-#define SQLPP_MYSQL_CHAR_RESULT_H
-
 #include <ciso646>
 #include <cstdlib>
 #include <iostream>
 #include <memory>
 #include <sqlpp11/chrono.h>
+#include <sqlpp11/detail/parse_date_time.h>
 #include <sqlpp11/exception.h>
+#include <sqlpp11/mysql/detail/result_handle.h>
 #include <sqlpp11/mysql/sqlpp_mysql.h>
 #include <sqlpp11/mysql/char_result_row.h>
 
@@ -40,76 +41,6 @@ namespace sqlpp
 {
   namespace mysql
   {
-    namespace detail
-    {
-      struct result_handle
-      {
-        MYSQL_RES* mysql_res;
-        bool debug;
-
-        result_handle(MYSQL_RES* res, bool debug_) : mysql_res(res), debug(debug_)
-        {
-        }
-
-        result_handle(const result_handle&) = delete;
-        result_handle(result_handle&&) = default;
-        result_handle& operator=(const result_handle&) = delete;
-        result_handle& operator=(result_handle&&) = default;
-
-        ~result_handle()
-        {
-          if (mysql_res)
-            mysql_free_result(mysql_res);
-        }
-
-        bool operator!() const
-        {
-          return !mysql_res;
-        }
-      };
-
-      inline auto check_first_digit(const char* text, bool digitFlag) -> bool
-      {
-        if (digitFlag)
-        {
-          if (not std::isdigit(*text))
-          {
-            return false;
-          }
-        }
-        else
-        {
-          if (std::isdigit(*text) or *text == '\0')
-          {
-            return false;
-          }
-        }
-        return true;
-      }
-
-      inline auto check_date_digits(const char* text) -> bool
-      {
-        for (const auto digitFlag : {true, true, true, true, false, true, true, false, true, true})  // YYYY-MM-DD
-        {
-          if (not check_first_digit(text, digitFlag))
-            return false;
-          ++text;
-        }
-        return true;
-      }
-
-      inline auto check_time_digits(const char* text) -> bool
-      {
-        for (const auto digitFlag : {true, true, false, true, true, false, true, true}) // hh:mm:ss
-        {
-          if (not check_first_digit(text, digitFlag))
-            return false;
-          ++text;
-        }
-        return true;
-      }
-    }  // namespace detail
-
     class char_result_t
     {
       std::unique_ptr<detail::result_handle> _handle;
@@ -117,10 +48,10 @@ namespace sqlpp
 
     public:
       char_result_t() = default;
-      char_result_t(std::unique_ptr<detail::result_handle>&& handle) : _handle(std::move(handle))
+      char_result_t(std::unique_ptr<detail::result_handle>&& handle) : _handle{std::move(handle)}
       {
         if (_invalid())
-          throw sqlpp::exception("MySQL: Constructing char_result without valid handle");
+          throw sqlpp::exception{"MySQL: Constructing char_result without valid handle"};
 
         if (_handle->debug)
           std::cerr << "MySQL debug: Constructing result, using handle at " << _handle.get() << std::endl;
@@ -193,14 +124,14 @@ namespace sqlpp
 
       void _bind_blob_result(size_t index, const uint8_t** value, size_t* len)
       {
-        bool is_null = (_char_result_row.data == nullptr or _char_result_row.data[index] == nullptr);
+        bool is_null{_char_result_row.data == nullptr or _char_result_row.data[index] == nullptr};
         *value = (uint8_t*)(is_null ? nullptr : _char_result_row.data[index]);
         *len = (is_null ? 0 : _char_result_row.len[index]);
       }
 
       void _bind_text_result(size_t index, const char** value, size_t* len)
       {
-        bool is_null = (_char_result_row.data == nullptr or _char_result_row.data[index] == nullptr);
+        bool is_null{_char_result_row.data == nullptr or _char_result_row.data[index] == nullptr};
         *value = (is_null ? nullptr : _char_result_row.data[index]);
         *len = (is_null ? 0 : _char_result_row.len[index]);
       }
@@ -210,10 +141,10 @@ namespace sqlpp
         if (_handle->debug)
           std::cerr << "MySQL debug: parsing date result at index: " << index << std::endl;
 
+        *value = {};
         *is_null = (_char_result_row.data == nullptr or _char_result_row.data[index] == nullptr);
         if (*is_null)
         {
-          *value = {};
           return;
         }
 
@@ -221,16 +152,10 @@ namespace sqlpp
         if (_handle->debug)
           std::cerr << "MySQL debug: date string: " << date_string << std::endl;
 
-        if (detail::check_date_digits(date_string))
-        {
-          const auto ymd = ::date::year(std::atoi(date_string)) / atoi(date_string + 5) / atoi(date_string + 8);
-          *value = ::sqlpp::chrono::day_point(ymd);
-        }
-        else
+        if (::sqlpp::detail::parse_date(*value, date_string) == false)
         {
           if (_handle->debug)
             std::cerr << "MySQL debug: invalid date result: " << date_string << std::endl;
-          *value = {};
         }
       }
 
@@ -239,10 +164,10 @@ namespace sqlpp
         if (_handle->debug)
           std::cerr << "MySQL debug: parsing date result at index: " << index << std::endl;
 
+        *value = {};
         *is_null = (_char_result_row.data == nullptr or _char_result_row.data[index] == nullptr);
         if (*is_null)
         {
-          *value = {};
           return;
         }
 
@@ -250,41 +175,10 @@ namespace sqlpp
         if (_handle->debug)
           std::cerr << "MySQL debug: date_time string: " << date_time_string << std::endl;
 
-        if (detail::check_date_digits(date_time_string))
-        {
-          const auto ymd =
-              ::date::year(std::atoi(date_time_string)) / atoi(date_time_string + 5) / atoi(date_time_string + 8);
-          *value = ::sqlpp::chrono::day_point(ymd);
-        }
-        else
+        if (::sqlpp::detail::parse_timestamp(*value, date_time_string) == false)
         {
           if (_handle->debug)
             std::cerr << "MySQL debug: invalid date_time result: " << date_time_string << std::endl;
-          *value = {};
-
-          return;
-        }
-
-        const auto time_string = date_time_string + 11; // YYYY-MM-DDT
-        if (detail::check_time_digits(time_string))
-        {
-          *value += ::std::chrono::hours(std::atoi(time_string + 0)) +
-                    std::chrono::minutes(std::atoi(time_string + 3)) + std::chrono::seconds(std::atoi(time_string + 6));
-        }
-        else
-        {
-          return;
-        }
-
-        const auto mu_string = time_string + 8; // hh:mm:ss
-        if (mu_string[0] == '\0')
-        {
-          return;
-        }
-        auto factor = 100 * 1000;
-        for (auto i = 1u; i <= 6u and std::isdigit(mu_string[i]); ++i, factor /= 10)
-        {
-          *value += ::std::chrono::microseconds(factor * (mu_string[i] - '0'));
         }
       }
 
@@ -302,4 +196,3 @@ namespace sqlpp
     };
   }  // namespace mysql
 }  // namespace sqlpp
-#endif

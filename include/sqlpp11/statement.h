@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Copyright (c) 2013-2015, Roland Bock
  * All rights reserved.
@@ -23,9 +25,6 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
-#ifndef SQLPP11_STATEMENT_H
-#define SQLPP11_STATEMENT_H
 
 #include <sqlpp11/noop.h>
 #include <sqlpp11/parameter_list.h>
@@ -193,7 +192,7 @@ namespace sqlpp
                     tag_if<tag::is_expression, is_expression_t<_policies_t>::value>,
                     tag_if<tag::is_selectable, is_expression_t<_policies_t>::value>,
                     tag_if<tag::is_return_value, logic::none_t<is_noop_t<_result_type_provider>::value>::value>,
-                    tag::requires_braces>;
+                    tag::requires_parens>;
     using _nodes = detail::type_vector<_policies_t>;
     using _used_outer_tables = typename _policies_t::_all_provided_outer_tables;
 
@@ -317,5 +316,3 @@ namespace sqlpp
     };
   };
 }  // namespace sqlpp
-
-#endif

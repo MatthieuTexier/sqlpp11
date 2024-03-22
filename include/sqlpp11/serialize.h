@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Copyright (c) 2013-2015, Roland Bock
  * All rights reserved.
@@ -24,9 +26,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SQLPP11_SERIALIZE_H
-#define SQLPP11_SERIALIZE_H
-
 #include <sqlpp11/type_traits.h>
 
 namespace sqlpp
@@ -34,7 +33,7 @@ namespace sqlpp
   template <typename T, typename Context>
   auto serialize_operand(const T& t, Context& context) -> Context&
   {
-    if (requires_braces_t<T>::value)
+    if (requires_parens_t<T>::value)
     {
       context << '(';
       serialize(t, context);
@@ -48,5 +47,3 @@ namespace sqlpp
     return context;
   }
 }  // namespace sqlpp
-
-#endif

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Serge Robyns
+ * Copyright (c) 2023, Roland Bock
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
@@ -23,13 +23,17 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <sqlpp11/postgresql/connection.h>
+#include "Sample.h"
+#include "compare.h"
 #include <sqlpp11/sqlpp11.h>
 
-namespace sql = sqlpp::postgresql;
-
-int Constructor(int, char*[])
+int Some(int, char* [])
 {
-  sql::connection db;
+  const auto bar = test::TabBar{};
+
+  // With sub select.
+  compare(__LINE__, some(select(bar.alpha).from(bar).where(bar.alpha > 17)), "SOME(SELECT tab_bar.alpha FROM tab_bar WHERE (tab_bar.alpha>17))");
+  compare(__LINE__, bar.delta == some(select(bar.alpha).from(bar).where(bar.alpha > 17)), "(tab_bar.delta=SOME(SELECT tab_bar.alpha FROM tab_bar WHERE (tab_bar.alpha>17)))");
+
   return 0;
 }

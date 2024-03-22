@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Copyright (c) 2013-2016, Roland Bock
  * All rights reserved.
@@ -24,9 +26,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SQLPP11_FUNCTIONS_H
-#define SQLPP11_FUNCTIONS_H
-
 #include <sqlpp11/noop.h>
 #include <sqlpp11/parameter.h>
 #include <sqlpp11/parameter_list.h>
@@ -34,6 +33,8 @@
 #include <sqlpp11/aggregate_functions.h>
 #include <sqlpp11/trim.h>
 #include <sqlpp11/case.h>
+#include <sqlpp11/lower.h>
+#include <sqlpp11/upper.h>
 #include <sqlpp11/in.h>
 #include <sqlpp11/not_in.h>
 #include <sqlpp11/is_null.h>
@@ -135,5 +136,3 @@ namespace sqlpp
     return name_of<T>::template char_ptr<void>();
   }
 }  // namespace sqlpp
-
-#endif

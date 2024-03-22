@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Copyright (c) 2013 - 2015, Roland Bock
  * All rights reserved.
@@ -24,9 +26,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SQLPP_SQLITE3_PREPARED_STATEMENT_H
-#define SQLPP_SQLITE3_PREPARED_STATEMENT_H
-
 #include <memory>
 #include <ciso646>
 #include <cmath>
@@ -38,7 +37,7 @@
 #include <sqlpp11/exception.h>
 #include <sqlpp11/sqlite3/export.h>
 
-#include <sqlpp11/sqlite3/prepared_statement_handle.h>
+#include <sqlpp11/sqlite3/detail/prepared_statement_handle.h>
 
 #ifdef _MSC_VER
 #pragma warning(push)
@@ -49,6 +48,9 @@ namespace sqlpp
 {
   namespace sqlite3
   {
+    // Forward declaration
+    class connection_base;
+
     namespace detail
     {
       inline void check_bind_result(int result, const char* const type)
@@ -58,23 +60,21 @@ namespace sqlpp
           case SQLITE_OK:
             return;
           case SQLITE_RANGE:
-            throw sqlpp::exception("Sqlite3 error: " + std::string(type) + " bind value out of range");
+            throw sqlpp::exception{"Sqlite3 error: " + std::string(type) + " bind value out of range"};
           case SQLITE_NOMEM:
-            throw sqlpp::exception("Sqlite3 error: " + std::string(type) + " bind out of memory");
+            throw sqlpp::exception{"Sqlite3 error: " + std::string(type) + " bind out of memory"};
           case SQLITE_TOOBIG:
-            throw sqlpp::exception("Sqlite3 error: " + std::string(type) + " bind too big");
+            throw sqlpp::exception{"Sqlite3 error: " + std::string(type) + " bind too big"};
           default:
-            throw sqlpp::exception("Sqlite3 error: " + std::string(type) +
-                                   " bind returned unexpected value: " + std::to_string(result));
+            throw sqlpp::exception{"Sqlite3 error: " + std::string(type) +
+                                   " bind returned unexpected value: " + std::to_string(result)};
         }
       }
     }  // namespace detail
 
-    class connection;
-
     class SQLPP11_SQLITE3_EXPORT prepared_statement_t
     {
-      friend ::sqlpp::sqlite3::connection;
+      friend class ::sqlpp::sqlite3::connection_base;
       std::shared_ptr<detail::prepared_statement_handle_t> _handle;
 
     public:
@@ -252,6 +252,4 @@ namespace sqlpp
 
 #ifdef _MSC_VER
 #pragma warning(pop)
-#endif
-
 #endif

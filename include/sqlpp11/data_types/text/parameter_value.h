@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Copyright (c) 2013-2015, Roland Bock
  * All rights reserved.
@@ -24,14 +26,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SQLPP11_DATA_TYPES_TEXT_PARAMETER_VALUE_H
-#define SQLPP11_DATA_TYPES_TEXT_PARAMETER_VALUE_H
-
 #include <sqlpp11/data_types/parameter_value.h>
 #include <sqlpp11/data_types/parameter_value_base.h>
 #include <sqlpp11/data_types/text/data_type.h>
 #include <sqlpp11/data_types/text/wrap_operand.h>
 #include <sqlpp11/data_types/text/operand.h>
+
+#if __cplusplus >= 201703L
+#include <string_view>
+#endif
 
 namespace sqlpp
 {
@@ -47,6 +50,21 @@ namespace sqlpp
     {
       target._bind_text_parameter(index, &_value, _is_null);
     }
+
+#if __cplusplus >= 201703L
+    parameter_value_base& operator=(const std::string_view& val)
+    {
+      _value = val;
+      _is_null = false;
+      return *this;
+    }
+
+    parameter_value_base& operator=(const char* val)
+    {
+      _value = val;
+      _is_null = false;
+      return *this;
+    }
+#endif
   };
 }  // namespace sqlpp
-#endif

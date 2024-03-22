@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Copyright (c) 2013-2016, Roland Bock
  * All rights reserved.
@@ -24,9 +26,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SQLPP11_TABLE_ALIAS_H
-#define SQLPP11_TABLE_ALIAS_H
-
 #include <sqlpp11/alias.h>
 #include <sqlpp11/column_fwd.h>
 #include <sqlpp11/detail/type_set.h>
@@ -45,6 +44,7 @@ namespace sqlpp
     using _traits = make_traits<value_type_of<Table>,
                                 tag::is_table,
                                 tag::is_alias,
+                                tag_if<tag::can_be_null, can_be_null_t<Table>::value>,
                                 tag_if<tag::is_selectable, is_expression_t<Table>::value>>;
 
     using _nodes = detail::type_vector<>;
@@ -102,12 +102,12 @@ namespace sqlpp
   template <typename Context, typename AliasProvider, typename Table, typename... ColumnSpec>
   Context& serialize(const table_alias_t<AliasProvider, Table, ColumnSpec...>& t, Context& context)
   {
-    if (requires_braces_t<Table>::value)
+    if (requires_parens_t<Table>::value)
     {
       context << "(";
     }
     serialize(t._table, context);
-    if (requires_braces_t<Table>::value)
+    if (requires_parens_t<Table>::value)
     {
       context << ")";
     }
@@ -115,5 +115,3 @@ namespace sqlpp
     return context;
   }
 }  // namespace sqlpp
-
-#endif

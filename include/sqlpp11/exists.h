@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Copyright (c) 2013-2015, Roland Bock
  * All rights reserved.
@@ -23,9 +25,6 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
-#ifndef SQLPP11_EXISTS_H
-#define SQLPP11_EXISTS_H
 
 #include <sqlpp11/char_sequence.h>
 #include <sqlpp11/data_types/boolean.h>
@@ -80,9 +79,8 @@ namespace sqlpp
   template <typename Context, typename Select>
   Context& serialize(const exists_t<Select>& t, Context& context)
   {
-    context << "EXISTS(";
-    serialize(t._select, context);
-    context << ")";
+    context << "EXISTS";
+    serialize_operand(t._select, context);
     return context;
   }
 
@@ -93,5 +91,3 @@ namespace sqlpp
     return {t};
   }
 }  // namespace sqlpp
-
-#endif

@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Copyright (c) 2013-2015, Roland Bock
  * All rights reserved.
@@ -24,9 +26,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SQLPP11_INTERPRETABLE_H
-#define SQLPP11_INTERPRETABLE_H
-
 #include <memory>
 #include <sqlpp11/parameter_list.h>
 #include <sqlpp11/serialize.h>
@@ -39,7 +38,7 @@ namespace sqlpp
     using _serializer_context_t = typename Db::_serializer_context_t;
 
     template <typename T>
-    interpretable_t(T t) : _requires_braces(requires_braces_t<T>::value), _impl(std::make_shared<_impl_t<T>>(t))
+    interpretable_t(T t) : _requires_parens(requires_parens_t<T>::value), _impl(std::make_shared<_impl_t<T>>(t))
     {
     }
 
@@ -54,7 +53,7 @@ namespace sqlpp
       return _impl->interpret(context);
     }
 
-    bool _requires_braces;
+    bool _requires_parens;
 
   private:
     struct _impl_base
@@ -86,7 +85,7 @@ namespace sqlpp
   template <typename Context, typename Database>
   Context& serialize(const interpretable_t<Database>& t, Context& context)
   {
-    if (t._requires_braces)
+    if (t._requires_parens)
     {
       context << '(';
       t.interpret(context);
@@ -100,5 +99,3 @@ namespace sqlpp
     return context;
   }
 }  // namespace sqlpp
-
-#endif

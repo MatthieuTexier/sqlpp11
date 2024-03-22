@@ -23,6 +23,7 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "make_test_connection.h"
 #include "TabSample.h"
 #include <sqlpp11/mysql/mysql.h>
 #include <sqlpp11/sqlpp11.h>
@@ -68,32 +69,13 @@ namespace
   }
 }
 
-namespace mysql = sqlpp::mysql;
+namespace sql = sqlpp::mysql;
 int DateTime(int, char*[])
 {
-  auto config = std::make_shared<mysql::connection_config>();
-  config->user = "root";
-  config->database = "sqlpp_mysql";
-  config->debug = true;
+  sql::global_library_init();
   try
   {
-    mysql::connection db(config);
-  }
-  catch (const std::exception& e)
-  {
-    std::cerr << "For testing, you'll need to create a database sqlpp_mysql for user root (no password)" << std::endl;
-    std::cerr << e.what() << std::endl;
-    return 1;
-  }
-  catch (...)
-  {
-    std::cerr << "Unknown exception during connect" << std::endl;
-    return 1;
-  }
-
-  try
-  {
-    mysql::connection db(config);
+    auto db = sql::make_test_connection();
     db.execute(R"(SET time_zone = '+00:00')"); // To force MySQL's CURRENT_TIMESTAMP into the right timezone
     db.execute(R"(DROP TABLE IF EXISTS tab_date_time)");
     db.execute(R"(CREATE TABLE tab_date_time (
@@ -110,14 +92,14 @@ int DateTime(int, char*[])
       require_equal(__LINE__, row.colDayPoint.value(), ::sqlpp::chrono::day_point{});
       require_equal(__LINE__, row.colTimePoint.is_null(), true);
       require_equal(__LINE__, row.colTimePoint.value(), ::sqlpp::chrono::microsecond_point{});
-      require_close(__LINE__, row.colDateTimePoint.value(), std::chrono::system_clock::now());
+      require_close(__LINE__, row.colDateTimePoint.value(), sqlpp::chrono::floor<std::chrono::seconds>(std::chrono::system_clock::now()));
     }
 
     auto statement = db.prepare(select(tab.colDateTimePoint).from(tab).unconditionally());
     for (const auto& row : db(statement))
     {
       require_equal(__LINE__, row.colDateTimePoint.is_null(), false);
-      require_close(__LINE__, row.colDateTimePoint.value(), std::chrono::system_clock::now());
+      require_close(__LINE__, row.colDateTimePoint.value(), sqlpp::chrono::floor<std::chrono::seconds>(std::chrono::system_clock::now()));
     }
 
     db(update(tab).set(tab.colDayPoint = today, tab.colTimePoint = now).unconditionally());

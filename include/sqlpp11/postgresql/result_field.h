@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Copyright (c) 2021-2021, Roland Bock
  * All rights reserved.
@@ -24,9 +26,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SQLPP_POSTGRESQL_BLOB_RESULT_FIELD_H
-#define SQLPP_POSTGRESQL_BLOB_RESULT_FIELD_H
-
 #include <sqlpp11/basic_expression_operators.h>
 #include <sqlpp11/exception.h>
 #include <sqlpp11/result_field.h>
@@ -40,7 +39,8 @@ namespace sqlpp
 {
   namespace postgresql
   {
-    class connection;
+    // Forward declaration
+    class connection_base;
   }
 
   namespace detail
@@ -75,7 +75,7 @@ namespace sqlpp
         case 'F':
           return c + 10 - 'A';
       }
-      throw sqlpp::exception(std::string("Unexpected hex char: ") + static_cast<char>(c));
+      throw sqlpp::exception{std::string{"Unexpected hex char: "} + static_cast<char>(c)};
     }
 
     inline void hex_assign(std::vector<unsigned char>& value, const uint8_t* blob, size_t len)
@@ -93,8 +93,8 @@ namespace sqlpp
   }  // namespace detail
 
   template <typename NameType, bool CanBeNull>
-  struct result_field_t<postgresql::connection, field_spec_t<NameType, blob, CanBeNull>>
-      : public result_field_base<postgresql::connection, field_spec_t<NameType, blob, CanBeNull>>
+  struct result_field_t<postgresql::connection_base, field_spec_t<NameType, blob, CanBeNull>>
+      : public result_field_base<postgresql::connection_base, field_spec_t<NameType, blob, CanBeNull>>
   {
   private:
     const uint8_t* _blob{nullptr};  // Non-owning
@@ -118,4 +118,3 @@ namespace sqlpp
 
   };
 }  // namespace sqlpp
-#endif
