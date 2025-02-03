@@ -43,12 +43,16 @@ else()
         NAMES mariadb_version.h
         PATH_SUFFIXES mariadb mysql
     )
-    find_library(MariaDB_LIBRARY NAMES mariadb)
+    find_library(MariaDB_LIBRARY 
+        NAMES mariadb
+        PATH_SUFFIXES mariadb mysql
+    )
 endif()
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(
     MariaDB
+    DEFAULT_MSG
     MariaDB_INCLUDE_DIR
     MariaDB_LIBRARY
 )

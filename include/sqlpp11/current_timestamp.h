@@ -26,22 +26,29 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <sqlpp11/type_traits.h>
-#include <cstdint>
+#include <sqlpp11/char_sequence.h>
+#include <sqlpp11/data_types/time_point/data_type.h>
 
 namespace sqlpp
 {
-  struct integral
+  struct current_timestamp_t : public expression_operators<current_timestamp_t, time_point>, public alias_operators<current_timestamp_t>
   {
-    using _traits = make_traits<integral, tag::is_value_type>;
-    using _cpp_value_type = int64_t;
+    using _traits = make_traits<time_point, tag::is_expression, tag::is_selectable>;
 
-    template <typename T>
-    using _is_valid_operand = is_numeric_t<T>;
+    constexpr current_timestamp_t() = default;
+    current_timestamp_t(const current_timestamp_t&) = default;
+    current_timestamp_t(current_timestamp_t&&) = default;
+    current_timestamp_t& operator=(const current_timestamp_t&) = default;
+    current_timestamp_t& operator=(current_timestamp_t&&) = default;
+    ~current_timestamp_t() = default;
   };
 
-  using tinyint = integral;
-  using smallint = integral;
-  using integer = integral;
-  using bigint = integral;
+  template <typename Context>
+  Context& serialize(const current_timestamp_t&, Context& context)
+  {
+    context << "CURRENT_TIMESTAMP";
+    return context;
+  }
+
+  constexpr current_timestamp_t current_timestamp{};
 }  // namespace sqlpp

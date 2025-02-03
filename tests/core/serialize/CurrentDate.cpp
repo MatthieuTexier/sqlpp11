@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Serge Robyns
+ * Copyright (c) 2024, Roland Bock
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
@@ -24,42 +24,11 @@
  */
 
 #include "compare.h"
-#include "Sample.h"
 #include <sqlpp11/sqlpp11.h>
 
-#include <iostream>
-
-namespace
+int CurrentDate(int, char* [])
 {
-  /*
-  auto getTrue() -> std::string
-  {
-    MockDb::_serializer_context_t printer = {};
-    return serialize(sqlpp::value(true), printer).str();
-  }
-  */
-
-  auto getFalse() -> std::string
-  {
-    MockDb::_serializer_context_t printer = {};
-    return serialize(sqlpp::value(false), printer).str();
-  }
-}
-
-int ForUpdate(int, char* [])
-{
-  const auto foo = test::TabFoo{};
-  // const auto bar = test::TabBar{};
-
-  compare(__LINE__, sqlpp::for_update(),
-          " FOR UPDATE ");
-
-  // Unconditionally
-  compare(__LINE__, select(foo.omega).from(foo).unconditionally().for_update(),
-          "SELECT tab_foo.omega FROM tab_foo FOR UPDATE ");
-
-  // Never
-  compare(__LINE__, where(sqlpp::value(false)), " WHERE " + getFalse());
+  compare(__LINE__, sqlpp::current_date, "CURRENT_DATE");
 
   return 0;
 }

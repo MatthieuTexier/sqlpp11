@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Serge Robyns
+ * Copyright (c) 2024, Roland Bock
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
@@ -23,43 +23,20 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "compare.h"
-#include "Sample.h"
 #include <sqlpp11/sqlpp11.h>
+#include <sqlpp11/sqlite3/sqlite3.h>
 
-#include <iostream>
+#include "../usage/TabSample.h"
 
-namespace
+#include "compare.h"
+
+int Join(int, char*[])
 {
-  /*
-  auto getTrue() -> std::string
-  {
-    MockDb::_serializer_context_t printer = {};
-    return serialize(sqlpp::value(true), printer).str();
-  }
-  */
+  const auto tab = TabSample{};
+  const auto foo = TabFoo{};
 
-  auto getFalse() -> std::string
-  {
-    MockDb::_serializer_context_t printer = {};
-    return serialize(sqlpp::value(false), printer).str();
-  }
-}
-
-int ForUpdate(int, char* [])
-{
-  const auto foo = test::TabFoo{};
-  // const auto bar = test::TabBar{};
-
-  compare(__LINE__, sqlpp::for_update(),
-          " FOR UPDATE ");
-
-  // Unconditionally
-  compare(__LINE__, select(foo.omega).from(foo).unconditionally().for_update(),
-          "SELECT tab_foo.omega FROM tab_foo FOR UPDATE ");
-
-  // Never
-  compare(__LINE__, where(sqlpp::value(false)), " WHERE " + getFalse());
+  compare(__LINE__, select(tab.alpha).from(tab.left_outer_join(foo).on(tab.alpha == foo.omega)).unconditionally(),
+          "SELECT tab_sample.alpha FROM tab_sample LEFT OUTER JOIN tab_foo ON (tab_sample.alpha=tab_foo.omega)");
 
   return 0;
 }

@@ -26,22 +26,29 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <sqlpp11/type_traits.h>
-#include <cstdint>
+#include <sqlpp11/char_sequence.h>
+#include <sqlpp11/data_types/day_point/data_type.h>
 
 namespace sqlpp
 {
-  struct integral
+  struct current_date_t : public expression_operators<current_date_t, day_point>, public alias_operators<current_date_t>
   {
-    using _traits = make_traits<integral, tag::is_value_type>;
-    using _cpp_value_type = int64_t;
+    using _traits = make_traits<day_point, tag::is_expression, tag::is_selectable>;
 
-    template <typename T>
-    using _is_valid_operand = is_numeric_t<T>;
+    constexpr current_date_t() = default;
+    current_date_t(const current_date_t&) = default;
+    current_date_t(current_date_t&&) = default;
+    current_date_t& operator=(const current_date_t&) = default;
+    current_date_t& operator=(current_date_t&&) = default;
+    ~current_date_t() = default;
   };
 
-  using tinyint = integral;
-  using smallint = integral;
-  using integer = integral;
-  using bigint = integral;
+  template <typename Context>
+  Context& serialize(const current_date_t&, Context& context)
+  {
+    context << "CURRENT_DATE";
+    return context;
+  }
+
+  constexpr current_date_t current_date{};
 }  // namespace sqlpp

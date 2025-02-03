@@ -26,18 +26,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <sqlpp11/compat/sqlpp_cxx_std.h>
+
 #include <functional>
 #include <iterator>
 #include <utility>
 
 namespace sqlpp
 {
-  template <typename>
-  struct iterator_category
-  {
-    using type = std::input_iterator_tag;
-  };
-
   namespace detail
   {
     template<class DbResult, class = void>
@@ -87,31 +83,50 @@ namespace sqlpp
     class iterator
     {
     public:
-      using iterator_category = typename iterator_category<DbResult>::type;
+#if SQLPP_CXX_STD >= 202002L
+      using iterator_concept = std::input_iterator_tag;
+#else
+      // LegacyInputIterator describes best our iterator's capabilities. However our iterator does not
+      // really fulfil the requirements for LegacyInputIterator because its post-increment operator
+      // returns void.
+      using iterator_category = std::input_iterator_tag;
+#endif
       using value_type = result_row_t;
       using pointer = const result_row_t*;
       using reference = const result_row_t&;
       using difference_type = std::ptrdiff_t;
 
-      iterator(std::reference_wrapper<db_result_t> result,
-               std::reference_wrapper<result_row_t> result_row) :
-          _result(std::move(result)), _result_row(std::move(result_row))
+      iterator()
+          : _result_ptr(nullptr), _result_row_ptr(nullptr)
+      {
+      }
+
+      iterator(db_result_t& result, result_row_t& result_row)
+          : _result_ptr(&result), _result_row_ptr(&result_row)
       {
       }
 
       reference operator*() const
       {
-        return _result_row;
+        return *_result_row_ptr;
       }
 
       pointer operator->() const
       {
-        return &_result_row.get();
+        return _result_row_ptr;
       }
 
       bool operator==(const iterator& rhs) const
       {
-        return _result_row.get() == rhs._result_row.get();
+        if ((_result_row_ptr != nullptr) != (rhs._result_row_ptr != nullptr))
+        {
+          return false;
+        }
+        if (_result_row_ptr == nullptr)
+        {
+          return true;
+        }
+        return *_result_row_ptr == *rhs._result_row_ptr;
       }
 
       bool operator!=(const iterator& rhs) const
@@ -121,29 +136,33 @@ namespace sqlpp
 
       iterator& operator++()
       {
-        _result.get().next(_result_row.get());
+        _result_ptr->next(*_result_row_ptr);
         return *this;
       }
 
-      iterator operator++(int)
+      // It is quite difficult to implement a postfix increment operator that returns the old iterator
+      // because the underlying database results work in a stream fashion not allowing to return to
+      // previously-read rows. That is why we set the post-increment return type to void, which is
+      // allowed for C++20 input iterators
+      //
+      void operator++(int)
       {
-        auto previous_it = *this;
-        _result.next(_result_row.get());
-        return previous_it;
+        ++*this;
       }
 
-      std::reference_wrapper<db_result_t> _result;
-      std::reference_wrapper<result_row_t> _result_row;
+      // Use T* instead of T& for default-constructibility
+      db_result_t* _result_ptr;
+      result_row_t* _result_row_ptr;
     };
 
     iterator begin()
     {
-      return iterator(std::ref(_result), std::ref(_result_row));
+      return iterator(_result, _result_row);
     }
 
     iterator end()
     {
-      return iterator(std::ref(_end), std::ref(_end_row));
+      return iterator(_end, _end_row);
     }
 
     const result_row_t& front() const

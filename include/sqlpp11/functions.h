@@ -50,6 +50,9 @@
 #include <sqlpp11/value_or_null.h>
 #include <sqlpp11/is_equal_to_or_null.h>
 #include <sqlpp11/eval.h>
+#include <sqlpp11/current_timestamp.h>
+#include <sqlpp11/current_date.h>
+#include <sqlpp11/current_time.h>
 
 namespace sqlpp
 {
@@ -131,8 +134,14 @@ namespace sqlpp
   }
 
   template <typename T>
-  constexpr const char* get_sql_name(const T& /*unused*/)
+  constexpr const char* get_sql_name()
   {
     return name_of<T>::template char_ptr<void>();
+  }
+
+  template <typename T>
+  constexpr const char* get_sql_name(const T& /*unused*/)
+  {
+    return get_sql_name<T>();
   }
 }  // namespace sqlpp

@@ -26,8 +26,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <sqlpp11/compat/sqlpp_cxx_std.h>
+
 #include <utility>
-#if __cplusplus >= 201703L
+#if SQLPP_CXX_STD >= 201703L
 #include <string_view>
 #endif
 #include <sqlpp11/type_traits.h>
@@ -37,7 +39,7 @@ namespace sqlpp
 {
   struct text_operand;
 
-#if __cplusplus >= 201703L
+#if SQLPP_CXX_STD >= 201703L
   using checked_type = std::string_view;
 #else
   using checked_type = std::string;

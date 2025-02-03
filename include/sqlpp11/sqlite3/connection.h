@@ -74,9 +74,14 @@ namespace sqlpp
 
         detail::prepared_statement_handle_t result{nullptr, handle->config->debug};
 
+        // ignore trailing spaces
+        const auto end =
+            std::find_if(statement.rbegin(), statement.rend(), [](char ch) { return !std::isspace(ch); }).base();
+        const auto length = end - statement.begin();
+
         const char* uncompiledTail = nullptr;
         const auto rc = sqlite3_prepare_v2(handle->native_handle(), statement.c_str(),
-                                           static_cast<int>(statement.size()), &result.sqlite_statement, &uncompiledTail);
+                                           static_cast<int>(length), &result.sqlite_statement, &uncompiledTail);
 
         if (rc != SQLITE_OK)
         {
@@ -85,7 +90,7 @@ namespace sqlpp
               " ,statement was >>" + (rc == SQLITE_TOOBIG ? statement.substr(0, 128) + "..." : statement) + "<<\n"};
         }
 
-        if (uncompiledTail != statement.c_str() + statement.size())
+        if (uncompiledTail != statement.c_str() + length)
         {
           throw sqlpp::exception{"Sqlite3 connector: Cannot execute multi-statements: >>" + statement + "<<\n"};
         }
@@ -369,12 +374,26 @@ namespace sqlpp
 
       template <
           typename Execute,
-          typename Enable = typename std::enable_if<not std::is_convertible<Execute, std::string>::value, void>::type>
+          typename std::enable_if<not std::is_convertible<Execute, std::string>::value 
+                                  and not sqlpp::is_prepared_statement_t<Execute>::value, int>::type = 0>
       size_t execute(const Execute& x)
       {
+        static_assert(not sqlpp::is_select_t<Execute>::value, "argument must not be a select statement - use operator() instead");
+
         _context_t context{*this};
         serialize(x, context);
         return execute(context.str());
+      }
+
+      template <
+          typename Execute,
+          typename std::enable_if<sqlpp::is_prepared_statement_t<Execute>::value, int>::type = 0>
+      size_t execute(const Execute& x)
+      {
+        static_assert(not sqlpp::is_select_t<Execute>::value, "argument must not be a select statement - use operator() instead");
+
+        operator()(x);
+        return static_cast<size_t>(sqlite3_changes(native_handle()));
       }
 
       template <typename Execute>

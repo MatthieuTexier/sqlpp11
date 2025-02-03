@@ -23,6 +23,8 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <sqlpp11/compat/sqlpp_cxx_std.h>
+
 #include "compare.h"
 #include "Sample.h"
 #include <sqlpp11/sqlpp11.h>
@@ -47,7 +49,7 @@ int Insert(int, char* [])
           "INSERT INTO tab_bar (beta,gamma) VALUES('cheesecake'," + getTrue() + ")");
   compare(__LINE__, insert_into(bar).set(bar.beta = ::sqlpp::null, bar.gamma = true),
           "INSERT INTO tab_bar (beta,gamma) VALUES(NULL," + getTrue() + ")");
-#if __cplusplus >= 201703L
+#if SQLPP_CXX_STD >= 201703L
   // string_view argument
   std::string_view cheeseCake = "cheesecake";
   compare(__LINE__, insert_into(bar).set(bar.beta = cheeseCake, bar.gamma = true),
